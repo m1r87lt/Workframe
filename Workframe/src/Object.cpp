@@ -10,9 +10,18 @@
 namespace base {
 
 const std::string ns = "base";
-std::string substring_after(std::string string, std::string match,
-		size_t number = 1, bool from_end) {
+std::string substring_after(std::string string, const std::string match,
+		bool from_end = false, size_t number) {
+	auto position = from_end ? string.find(match, 0) : string.rfind(match);
+	auto result =
+			((from_end = number ? from_end : !from_end)) ?
+					string.substr(0, position) :
+					string.substr(position + match.length());
 
+	if (number > 1)
+		return substring_after(result, match, from_end, --number);
+	else
+		return result;
 }
 
 //Object
@@ -24,28 +33,37 @@ const std::string& Object::has_label() const {
 const std::string& Object::has_logger() const {
 	return logger;
 }
-std::string Object::makes_track(const Object* caller) {
+std::string Object::makes_track(const Object* caller,
+		long long unsigned* track) {
 	std::string result;
+	auto tracking = ++tracker;
 
 	if (caller)
 		result = caller->logger + ".";
+	if (track)
+		*track = tracking;
 
-	return result + std::to_string(++tracker);
+	return result + std::to_string(tracking);
 }
 
 Object::Object(const Object* caller) {
 	// TODO Auto-generated constructor stub
-	logger = makes_track(caller);
 	label = ns + "::" + __func__;
+	logger = makes_track(caller);
 }
 Object::Object(const Object& copy) {
-	logger = makes_track(&copy);
 	label = copy.label;
+	logger = makes_track(nullptr);
+}
+Object& Object::operator =(const Object& copy) {
+	label = copy.label;
+	logger = copy.logger;
+
+	return *this;
 }
 Object::Object(Object&& moving) {
 	label = moving.label;
 	logger = moving.logger;
-	moving.logger.clear();
 }
 
 //Log
@@ -92,6 +110,7 @@ void Log::log_binary(const Log& logging, std::type_index type,
 void Log::log_return(const Log& logging, Object& returning) {
 	log(logging.logger, "=" + returning.prints().str(), logging.open,
 			&returning);
+	logging.open = false;
 }
 Log Log::as_unary(const Object* caller, bool open, std::type_index type,
 		std::string operation, const Object& object) {
@@ -135,12 +154,12 @@ Object&& Log::returns(Object&& returning) const {
 std::ostringstream Log::prints() const {
 	std::ostringstream result;
 
-	result << label << "{" << logger.s << "}";
+	result << label << "{" << track << "}";
 
 	return result;
 }
 void Log::logs_error(std::ostringstream message) const {
-	std::cerr << logger << ": " << label << message << std::endl;
+	std::cerr << logger << ": " << label << " " << message << std::endl;
 }
 Log Log::as_unary(const Object* caller, std::string operation,
 		std::type_index type) const {
@@ -155,17 +174,30 @@ Log Log::as_binary(const Object* caller, std::type_index type,
 	return as_binary(caller, open, type, *this, operation, righthand);
 }
 
-Log::Log(const Object* caller, std::string label) {
+Log::Log(const Object* caller, std::string label, bool open) {
 	// TODO Auto-generated constructor stub
-	logger = makes_log(caller);
+	logger = makes_track(caller, &track);
 	this->label = label;
+	this->open = open;
 }
 Log::~Log() {
-// TODO Auto-generated destructor stub
+	// TODO Auto-generated destructor stub
+	if (open)
+		std::clog << logger << "  }" << std::endl;
 }
-Log(const Log&);
-Log& operator =(const Log&);
-Log(Log&&);
-Log& operator =(Log&&);
+Log::Log(Log&& moving):
+		Object(std::forward<Log&&>(moving)){
+	track = moving.track;
+	open = moving.open;
+	moving.open = false;
+}
+Log& Log::operator =(Log&& moving) {
+	Object::operator =(moving);
+	track = moving.track;
+	open = moving.open;
+	moving.open = false;
+
+	return *this;
+}
 
 } /* namespace base */

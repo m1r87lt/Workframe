@@ -14,7 +14,7 @@
 
 namespace base {
 
-std::string substring_after(std::string, std::string, size_t, bool = false);
+std::string substring_after(std::string, std::string, bool, size_t = 1);
 
 class Object {
 	std::string label;
@@ -26,13 +26,14 @@ protected:
 	Object(const Object*);
 	virtual ~Object() = default;
 	Object(const Object&);
-	Object& operator =(const Object&) = delete;
+	Object& operator =(const Object&);
 	Object(Object&&);
 	Object& operator =(Object&&) = delete;
 
 	const std::string& has_label() const;
 	const std::string& has_logger() const;
-	static std::string makes_track(const Object*, long long unsigned* = nullptr);
+	static std::string makes_track(const Object*,
+			long long unsigned* = nullptr);
 };
 
 class Log: public Object {
@@ -85,8 +86,8 @@ public:
 	virtual std::ostringstream prints() const;
 
 	virtual ~Log();
-	Log(const Log&);
-	Log& operator =(const Log&);
+	Log(const Log&) = delete;
+	Log& operator =(const Log&) = delete;
 	Log(Log&&);
 	Log& operator =(Log&&);
 protected:
