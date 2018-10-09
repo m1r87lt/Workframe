@@ -25,7 +25,7 @@ std::string give_substring_after(std::string string, const std::string match,
 					string.substr(position + match.length());
 
 	if (number > 1)
-		return substring_after(result, match, from_end, --number);
+		return give_substring_after(result, match, from_end, --number);
 	else
 		return result;
 }
@@ -49,7 +49,6 @@ std::string Object::makes_track(const Object* caller) {
 }
 
 Object::Object(const Object* caller, std::string label) {
-	// TODO Auto-generated constructor stub
 	this->label = label;
 	logger = makes_track(caller);
 }
@@ -76,14 +75,10 @@ void Log::log(std::string logger, std::string message, bool open,
 		const Object* returning) {
 	logger += ": ";
 
-	if (returning) {
-		if (open)
-			std::clog << logger << "  }=" << returning->prints().str()
-					<< std::endl;
-		else
-			std::clog << logger << message << "=" << returning->prints().str()
-					<< std::endl;
-	} else if (open)
+	if (returning)
+		std::clog << logger << (open ? "  }=" : message + "=")
+				<< returning->prints().str() << std::endl;
+	else if (open)
 		std::clog << logger << message << " {" << std::endl;
 }
 void Log::log_unary(const Log& logging, std::type_index type,
@@ -179,12 +174,10 @@ Log Log::as_binary(const Log* caller, std::type_index type,
 
 Log::Log(const Log* caller, std::string label, bool open) :
 		Object(caller, label) {
-	// TODO Auto-generated constructor stub
-	track = std::stoull(substring_after(has_logger(), ".", true, 0));
+	track = std::stoull(give_substring_after(has_logger(), ".", true, 0));
 	this->open = open;
 }
 Log::~Log() {
-	// TODO Auto-generated destructor stub
 	if (open)
 		std::clog << has_logger() << "  }" << std::endl;
 }

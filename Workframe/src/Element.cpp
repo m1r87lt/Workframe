@@ -14,35 +14,47 @@ namespace base {
 std::set<Element*> Element::everything;
 
 time_t Element::exists_from() const {
+	as_method(nullptr, __func__, )
 	return creation;
 }
-void Element::is_modified(time_t instant) {
-	modification = instant;
+void Element::is_modified() {
+	modification = std::chrono::system_clock::now();
 }
 std::map<std::string, std::string> Element::gives_attributes() const {
 	return attributes;
 }
-void gets_attributes(std::map<std::string, std::string> attributes) {
-	for ()
+void Element::gets_attributes(std::map<std::string, std::string> attributes) {
+	last_attributes = this->attributes;
+	this->attributes = attributes;
+	is_modified();
 }
-Modifications gives_modifications();
-
-Element::Modifications Element::modifications() {
+Element::Modifications Element::gives_modifications() {
 	Modifications result;
 	auto end = attributes.end();
 	auto last_end = last_attributes.end();
 
 	for (auto last_attribute : last_attributes) {
-		auto iterator = result.emplace(last_attribute.first,
-				std::make_pair(last_attribute.second, ""));
+		auto last_first = last_attribute.first;
+		auto last_second = last_attribute.second;
 
-		if (attributes.find(last_attribute.first) != end)
-			iterator.first->second.second = attributes[last_attribute.first];
+		if (attributes.find(last_first) == end)
+			result.emplace(last_first, std::make_pair(last_second, ""));
+		else {
+			auto second = attributes.at(last_first);
+
+			if (second != last_second)
+				result.emplace(last_first, std::make_pair(last_second, second));
+		}
 	}
-	for (auto attribute : attributes)
-		if (last_attributes.find(attribute.first) != last_end)
+	for (auto attribute : attributes) {
+		auto first = attribute.first;
+
+		if (last_attributes.find(first) == last_end)
 			result.emplace(attribute.first,
 					std::make_pair("", attribute.second));
+	}
+
+	return result;
 }
 
 Element::~Element() {

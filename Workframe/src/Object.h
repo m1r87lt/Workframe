@@ -111,7 +111,7 @@ protected:
 	template<typename ... Arguments> Log as_method(const Log* caller,
 			std::string label, std::type_index type,
 			Arguments& ... arguments) const {
-		return as_method(caller, open, this->label + "::" + label, type,
+		return as_method(caller, open, prints() + "." + label, type,
 				arguments ...);
 	}
 };
