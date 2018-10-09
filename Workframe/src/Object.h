@@ -16,8 +16,8 @@ namespace base {
 
 bool is_running();
 void ends_run();
-std::string substring_after(std::string, std::string, bool, size_t = 1);
-template<typename ... Arguments> std::string scopes(std::string label,
+std::string give_substring_after(std::string, std::string, bool, size_t = 1);
+template<typename ... Arguments> std::string make_scopes(std::string label,
 		std::string ns, Arguments&& ... arguments) {
 	std::string recursive = scopes(arguments ...);
 
@@ -26,7 +26,7 @@ template<typename ... Arguments> std::string scopes(std::string label,
 
 	return recursive;
 }
-template<typename ... Arguments> std::string scopes(std::string label) {
+template<typename ... Arguments> std::string make_scopes(std::string label) {
 	return label;
 }
 

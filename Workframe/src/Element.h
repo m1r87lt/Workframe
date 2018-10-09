@@ -16,19 +16,25 @@ namespace base {
 
 class Element: public Log {
 	time_t creation;
+	time_t modification;
 	Element* position;
+	std::map<std::string, std::string> attributes;
+	std::map<std::string, std::string> last_attributes;
 	static std::set<Element*> everything;
+	friend class Ensemble;
 public:
 	virtual ~Element();
 
-	std::map<std::string, std::string> attributes;
+	using Modifications = std::map<std::string, std::pair<std::string, std::string>>;
 
 	time_t exists_from() const;
+	void is_modified(time_t);
+	std::map<std::string, std::string> gives_attributes() const;
+	void gets_attributes(std::map<std::string, std::string>);
+	Modifications gives_modifications();
 protected:
-	Element(const Log*, std::string, Element*,
-			std::map<std::string, std::string>);
-
-	time_t modification;
+	Element(const Log*, std::string, std::map<std::string, std::string>);
+	Element(const Log*, std::string);
 };
 
 } /* namespace base */

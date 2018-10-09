@@ -16,7 +16,7 @@ bool is_running() {
 void ends_run() {
 	run = false;
 }
-std::string substring_after(std::string string, const std::string match,
+std::string give_substring_after(std::string string, const std::string match,
 		bool from_end = false, size_t number) {
 	auto position = from_end ? string.find(match, 0) : string.rfind(match);
 	auto result =
