@@ -67,6 +67,19 @@ Object::Object(Object&& moving) {
 	logger = moving.logger;
 }
 
+//Void
+virtual std::ostringstream Void::prints() const {
+	return "";
+}
+
+Void::Void(const Log* caller) :
+		Object(caller, typeid(void).name()) {
+	std::clog << has_logger() << ": " << __func__ << std::endl;
+}
+Void::~Void() {
+	std::clog << has_logger() << "  " << __func__ << std::endl;
+}
+
 //Log
 std::ostringstream Log::log_arguments() {
 	return std::ostringstream();
@@ -158,18 +171,6 @@ Log Log::as_binary(const Log* caller, bool open, std::type_index type,
 	log_binary(result, type, lefthand, righthand, nullptr);
 
 	return result;
-}
-Log Log::as_unary(const Log* caller, std::string operation,
-		std::type_index type) const {
-	return as_unary(caller, open, type, operation, *this);
-}
-Log Log::as_unary(const Log* caller, std::type_index type,
-		std::string operation) const {
-	return as_unary(caller, open, type, *this, operation);
-}
-Log Log::as_binary(const Log* caller, std::type_index type,
-		std::string operation, const Object& righthand) const {
-	return as_binary(caller, open, type, *this, operation, righthand);
 }
 
 Log::Log(const Log* caller, std::string label, bool open) :

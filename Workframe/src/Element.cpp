@@ -13,15 +13,18 @@ namespace base {
 
 std::set<Element*> Element::everything;
 
-time_t Element::exists_from() const {
-	as_method(nullptr, __func__, )
-	return creation;
+time_t Element::exists_from(const Log* caller) const {
+	auto log = as_method(caller, __func__, typeid(time_t));
+
+	return log.returns(
+			Primitive<time_t>(&log, creation));
 }
-void Element::is_modified() {
+void Element::is_modified(const Log* caller) {
+	as_method(caller, __func__, typeid(void));
 	modification = std::chrono::system_clock::now();
 }
-std::map<std::string, std::string> Element::gives_attributes() const {
-	return attributes;
+std::map<std::string, std::string> Element::gives_attributes(const Log* caller) const {
+	return as_method<false>(caller, __func__, typeid(attributes)).returns(Class<decltype(attributes)>(this, ));
 }
 void Element::gets_attributes(std::map<std::string, std::string> attributes) {
 	last_attributes = this->attributes;
