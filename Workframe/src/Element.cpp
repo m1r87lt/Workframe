@@ -14,17 +14,15 @@ namespace base {
 std::set<Element*> Element::everything;
 
 time_t Element::exists_from(const Log* caller) const {
-	auto log = as_method(caller, __func__, typeid(time_t));
-
-	return log.returns(
-			Primitive<time_t>(&log, creation));
+	return method_primitive(creation, *this, __func__, caller);
 }
 void Element::is_modified(const Log* caller) {
-	as_method(caller, __func__, typeid(void));
+	as_method<false>(__func__, caller);
 	modification = std::chrono::system_clock::now();
 }
-std::map<std::string, std::string> Element::gives_attributes(const Log* caller) const {
-	return as_method<false>(caller, __func__, typeid(attributes)).returns(Class<decltype(attributes)>(this, ));
+std::map<std::string, std::string> Element::gives_attributes(
+		const Log* caller) const {
+	return method_class(caller, attributes, __func__);
 }
 void Element::gets_attributes(std::map<std::string, std::string> attributes) {
 	last_attributes = this->attributes;
@@ -61,14 +59,14 @@ Element::Modifications Element::gives_modifications() {
 }
 
 Element::~Element() {
-	// TODO Auto-generated destructor stub
+// TODO Auto-generated destructor stub
 	if (is_running())
 		everything.erase(this);
 }
 
 Element::Element(const Log* caller, std::string label) :
 		Log(caller, label, 4) {
-	// TODO Auto-generated constructor stub
+// TODO Auto-generated constructor stub
 	creation = std::chrono::system_clock::now();
 }
 
