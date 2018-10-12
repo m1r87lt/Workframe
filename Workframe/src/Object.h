@@ -11,6 +11,7 @@
 #include <sstream>
 #include <typeindex>
 #include <iostream>
+#include <functional>
 
 namespace base {
 
@@ -110,12 +111,12 @@ protected:
 		return as_unary(operation, *this, caller, Open, type);
 	}
 	template<bool Open = open> Log Log::as_unary(const Log* caller,
-			std::type_index type, std::string operation) const {
+			std::string operation, std::type_index type = typeid(void)) const {
 		return as_unary(*this, operation, caller, Open, type);
 	}
-	template<bool Open = open> Log Log::as_binary(const Log* caller,
-			std::type_index type, std::string operation,
-			const Object& righthand) const {
+	template<bool Open = open> Log Log::as_binary(std::string operation,
+			const Object& righthand, const Log* caller = nullptr,
+			std::type_index type = typeid(void)) const {
 		return as_binary(*this, operation, righthand, caller, Open, type);
 	}
 	template<bool Open = open, typename ... Arguments> Log as_method(
@@ -187,6 +188,7 @@ public:
 
 template<typename Type> class Class final: Object {
 	Type value;
+	static std::function<std::ostringstream(Type&)> printer;
 public:
 	Type& is() const {
 		return value;
@@ -195,15 +197,12 @@ public:
 		return std::move(value);
 	}
 	virtual std::ostringstream prints() const {
-		std::ostringstream result;
-
-		result << this;
-
-		return result;
+		return printer(value);
 	}
 
-	template<typename ... Arguments> Class(const Log* caller, Type value,
-			std::string name, Arguments&& ... arguments) :
+	template<typename ... Arguments> Class(Type value, std::string name =
+			typeid(Type).name(), const Log* caller = nullptr,
+			Arguments&& ... arguments) :
 			Object(caller, name), value(arguments ...) {
 		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
 				<< ">" << value << std::endl;
@@ -230,7 +229,7 @@ public:
 		return result;
 	}
 
-	Class(const Log* caller, std::string value) :
+	Class(std::string value, const Log* caller = nullptr) :
 			Object(caller, value) {
 		this->value = value;
 		std::clog << has_logger() << ": " << __func__ << "<" << has_label()

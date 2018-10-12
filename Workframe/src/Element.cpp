@@ -20,14 +20,17 @@ void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
 	modification = std::chrono::system_clock::now();
 }
+
+Class<std::map<std::string, std::string>>::printer = ;
 std::map<std::string, std::string> Element::gives_attributes(
 		const Log* caller) const {
 	return method_class(caller, attributes, __func__);
 }
-void Element::gets_attributes(std::map<std::string, std::string> attributes) {
+void Element::gets_attributes(std::map<std::string, std::string> attributes, const Log* caller) {
+	auto log = as_method()
 	last_attributes = this->attributes;
 	this->attributes = attributes;
-	is_modified();
+	is_modified(caller);
 }
 Element::Modifications Element::gives_modifications() {
 	Modifications result;
