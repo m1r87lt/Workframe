@@ -29,12 +29,16 @@ public:
 
 	time_t exists_from(const Log* = nullptr) const;
 	void is_modified(const Log* = nullptr);
-	std::map<std::string, std::string> gives_attributes(const Log* = nullptr) const;
-	void gets_attributes(std::map<std::string, std::string>, const Log* = nullptr);
-	Modifications gives_modifications(const Log* = nullptr);
+	Class<std::map<std::string, std::string>> gives_attributes(const Log* =
+			nullptr) const;
+	void gets_attributes(Class<std::map<std::string, std::string>>, const Log* =
+			nullptr);
+	Class<Modifications> gives_modifications(const Log* = nullptr);
 protected:
-	Element(const Log*, std::string, std::map<std::string, std::string>);
-	Element(const Log*, std::string);
+	Element(const Log*, Class<std::string>,
+			Class<std::map<std::string, std::string>> = Class<
+					std::map<std::string, std::string>>(
+					std::map<std::string, std::string>()));
 };
 
 } /* namespace base */

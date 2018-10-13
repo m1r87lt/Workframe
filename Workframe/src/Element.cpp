@@ -21,19 +21,54 @@ void Element::is_modified(const Log* caller) {
 	modification = std::chrono::system_clock::now();
 }
 
-Class<std::map<std::string, std::string>>::printer = ;
-std::map<std::string, std::string> Element::gives_attributes(
-		const Log* caller) const {
-	return method_class(caller, attributes, __func__);
+std::ostringstream class_std__map_std__string_std__string__(
+		Class<std::map<std::string, std::string>>& object) {
+	std::ostringstream result("{");
+
+	for (auto pair : object.is())
+		result << "\n\t" << pair.first << "=" << pair.second;
+	if (result.str() == "{")
+		result << " }";
+	else
+		result << "\n}";
+
+	return result;
 }
-void Element::gets_attributes(std::map<std::string, std::string> attributes, const Log* caller) {
-	auto log = as_method()
+std::function<std::ostringstream(std::map<std::string, std::string>&)> Class<
+		std::map<std::string, std::string>>::printer =
+		class_std__map_std__string_std__string__;
+Class<std::map<std::string, std::string>> Element::gives_attributes(
+		const Log* caller) const {
+	return method_class(attributes, *this, __func__, caller);
+}
+void Element::gets_attributes(
+		Class<std::map<std::string, std::string>> attributes,
+		const Log* caller) {
+	auto log = as_method(__func__, caller, typeid(void), attributes);
+
 	last_attributes = this->attributes;
 	this->attributes = attributes;
 	is_modified(caller);
 }
-Element::Modifications Element::gives_modifications() {
+
+std::ostringstream class_Modifications_(Class<Element::Modifications>& object) {
+	std::ostringstream result("{");
+
+	for (auto pair : object.is())
+		result << "\n\t" << pair.first << ": " << pair.second.first << " -> "
+				<< pair.second.second;
+	if (result.str() == "{")
+		result << " }";
+	else
+		result << "\n}";
+
+	return result;
+}
+std::function<std::ostringstream(Class<Element::Modifications>&)> Class<
+		Element::Modifications>::printer = class_Modifications_;
+Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	Modifications result;
+	auto log = as_method(__func__, caller, typeid(decltype(result)));
 	auto end = attributes.end();
 	auto last_end = last_attributes.end();
 
@@ -58,7 +93,7 @@ Element::Modifications Element::gives_modifications() {
 					std::make_pair("", attribute.second));
 	}
 
-	return result;
+	return log.returns(Class<Modifications>(result));
 }
 
 Element::~Element() {

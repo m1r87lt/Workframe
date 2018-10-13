@@ -18,16 +18,16 @@ namespace base {
 bool is_running();
 void ends_run();
 std::string give_substring_after(std::string, std::string, bool, size_t = 1);
-template<typename ... Arguments> auto make_scopes(std::string label,
+template<typename ... Arguments> std::string make_scopes(std::string label,
 		std::string ns, Arguments&& ... arguments) {
-	std::string recursive = scopes(arguments ...);
+	auto recursive = scopes(arguments ...);
 
 	if (ns.empty())
 		recursive = ns + "::" + recursive;
 
 	return recursive;
 }
-template<typename ... Arguments> auto make_scopes(std::string label) {
+template<typename ... Arguments> std::string make_scopes(std::string label) {
 	return label;
 }
 
@@ -54,8 +54,8 @@ class Log: virtual public Object {
 	long long unsigned track;
 	bool open;
 
-	template<typename ... Arguments> static auto log_arguments(Object& object,
-			Arguments& ... arguments) {
+	template<typename ... Arguments> static std::ostringstream log_arguments(
+			Object& object, Arguments& ... arguments) {
 		return object.prints() << ", " << log_arguments(arguments ...);
 	}
 	static std::ostringstream log_arguments();
@@ -93,7 +93,7 @@ public:
 			true, std::type_index = typeid(void));
 	static Log as_binary(const Object&, std::string, const Object&, const Log* =
 			nullptr, bool = true, std::type_index = typeid(void));
-	template<typename ... Arguments> static auto as_method(std::string label,
+	template<typename ... Arguments> static Log as_method(std::string label,
 			bool open, const Log* caller = nullptr, std::type_index type =
 					typeid(void), Arguments& ... arguments) {
 		Log result(caller, label, open);
@@ -105,21 +105,21 @@ public:
 protected:
 	Log(const Log*, std::string, bool);
 
-	template<bool Open = open> Log Log::as_unary(std::string operation,
+	template<bool Open = true> Log as_unary(std::string operation,
 			const Log* caller = nullptr,
 			std::type_index type = typeid(void)) const {
 		return as_unary(operation, *this, caller, Open, type);
 	}
-	template<bool Open = open> Log Log::as_unary(const Log* caller,
+	template<bool Open = true> Log as_unary(const Log* caller,
 			std::string operation, std::type_index type = typeid(void)) const {
 		return as_unary(*this, operation, caller, Open, type);
 	}
-	template<bool Open = open> Log Log::as_binary(std::string operation,
+	template<bool Open = true> Log as_binary(std::string operation,
 			const Object& righthand, const Log* caller = nullptr,
 			std::type_index type = typeid(void)) const {
 		return as_binary(*this, operation, righthand, caller, Open, type);
 	}
-	template<bool Open = open, typename ... Arguments> Log as_method(
+	template<bool Open = true, typename ... Arguments> Log as_method(
 			std::string label, const Log* caller = nullptr,
 			std::type_index type = typeid(void),
 			Arguments& ... arguments) const {
@@ -149,7 +149,7 @@ public:
 		return result;
 	}
 
-	Primitive(const Log* caller, Type value) :
+	Primitive(Type value, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()) {
 		this->value = value;
 		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
@@ -174,7 +174,7 @@ public:
 		return result;
 	}
 
-	Primitive(const Log* caller, const char* value) :
+	Primitive(const char* value, const Log* caller = nullptr) :
 			Object(caller, value) {
 		this->value = value;
 		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
@@ -188,8 +188,9 @@ public:
 
 template<typename Type> class Class final: Object {
 	Type value;
-	static std::function<std::ostringstream(Type&)> printer;
 public:
+	static std::function<std::ostringstream(Type&)> printer;
+
 	Type& is() const {
 		return value;
 	}
@@ -215,10 +216,13 @@ public:
 template<> class Class<std::string> final: Object {
 	std::string value;
 public:
-	std::string& is() const {
+	const std::string& is() const {
 		return value;
 	}
-	std::string&& becomes() const {
+	std::string& is() {
+		return value;
+	}
+	std::string&& becomes() {
 		return std::move(value);
 	}
 	virtual std::ostringstream prints() const {
@@ -241,35 +245,35 @@ public:
 	}
 };
 
-template<typename Type> auto unary_primitive(std::string operation,
+template<typename Type> Primitive<Type> unary_primitive(std::string operation,
 		const Object& object, Type returning, const Log* caller = nullptr) {
 	auto log = Log::as_unary(operation, object, caller, false,
 			typeid(returning));
 
 	return log.returns(Primitive<Type>(&log, returning));
 }
-template<typename Type> auto unary_class(std::string operation,
+template<typename Type> Class<Type> unary_class(std::string operation,
 		const Object& object, Type&& returning, const Log* caller = nullptr) {
 	auto log = Log::as_unary(operation, object, caller, false,
 			typeid(returning));
 
 	return log.returns(Class<Type>(&log, returning));
 }
-template<typename Type> auto unary_primitive(const Object& object,
+template<typename Type> Primitive<Type> unary_primitive(const Object& object,
 		std::string operation, Type returning, const Log* caller = nullptr) {
 	auto log = Log::as_unary(object, operation, caller, false,
 			typeid(returning));
 
 	return log.returns(Primitive<Type>(&log, returning));
 }
-template<typename Type> auto unary_class(const Object& object,
+template<typename Type> Class<Type> unary_class(const Object& object,
 		std::string operation, Type&& returning, const Log* caller = nullptr) {
 	auto log = Log::as_unary(object, operation, caller, false,
 			typeid(returning));
 
 	return log.returns(Class<Type>(&log, returning));
 }
-template<typename Type> auto binary_primitive(const Object& lefthand,
+template<typename Type> Primitive<Type> binary_primitive(const Object& lefthand,
 		std::string operation, const Object& righthand, Type returning,
 		const Log* caller = nullptr) {
 	auto log = Log::as_binary(lefthand, operation, righthand, caller, false,
@@ -277,7 +281,7 @@ template<typename Type> auto binary_primitive(const Object& lefthand,
 
 	return log.returns(Primitive<Type>(&log, returning));
 }
-template<typename Type> auto binary_class(const Object& lefthand,
+template<typename Type> Class<Type> binary_class(const Object& lefthand,
 		std::string operation, const Object& righthand, Type&& returning,
 		const Log* caller = nullptr) {
 	auto log = Log::as_binary(lefthand, operation, righthand, caller, false,
@@ -285,7 +289,7 @@ template<typename Type> auto binary_class(const Object& lefthand,
 
 	return log.returns(Class<Type>(&log, returning));
 }
-template<typename Type, typename ... Arguments> auto method_primitive(
+template<typename Type, typename ... Arguments> Primitive<Type> method_primitive(
 		Type returning, std::string label, const Log* caller = nullptr,
 		Arguments& ... arguments) {
 	auto log = as_method(label, false, caller, typeid(returning),
@@ -293,7 +297,7 @@ template<typename Type, typename ... Arguments> auto method_primitive(
 
 	return log.returns(Primitive<Type>(&log, returning));
 }
-template<typename Type, typename ... Arguments> auto method_primitive(
+template<typename Type, typename ... Arguments> Primitive<Type> method_primitive(
 		Type returning, const Object& object, std::string label,
 		const Log* caller = nullptr, Arguments& ... arguments) {
 	auto log = as_method(object.has_label() + "." + label, false, caller,
@@ -301,7 +305,7 @@ template<typename Type, typename ... Arguments> auto method_primitive(
 
 	return log.returns(Primitive<Type>(&log, returning));
 }
-template<typename Type, typename ... Arguments> auto method_class(
+template<typename Type, typename ... Arguments> Class<Type> method_class(
 		Type&& returning, std::string label, const Log* caller = nullptr,
 		Arguments& ... arguments) {
 	auto log = as_method(label, false, caller, typeid(returning),
@@ -309,9 +313,9 @@ template<typename Type, typename ... Arguments> auto method_class(
 
 	return log.returns(Class<Type>(&log, returning));
 }
-template<typename Type, typename ... Arguments> auto method_class(
-		const Log* caller, Type&& returning, const Object& object,
-		std::string label, Arguments& ... arguments) {
+template<typename Type, typename ... Arguments> Class<Type> method_class(
+		Type&& returning, const Object& object,
+		std::string label, const Log* caller = nullptr, Arguments& ... arguments) {
 	auto log = as_method(object.has_label() + "." + label, false, caller,
 			typeid(returning), arguments ...);
 

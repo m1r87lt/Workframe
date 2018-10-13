@@ -68,8 +68,8 @@ Object::Object(Object&& moving) {
 }
 
 //Void
-virtual std::ostringstream Void::prints() const {
-	return "";
+std::ostringstream Void::prints() const {
+	return std::ostringstream();
 }
 
 Void::Void(const Log* caller) :
@@ -147,25 +147,25 @@ std::ostringstream Log::prints() const {
 
 	return result;
 }
-Log Log::as_unary(const Log* caller, bool open, std::type_index type,
-		std::string operation, const Object& object) {
+Log Log::as_unary(std::string operation, const Object& object,
+		const Log* caller, bool open, std::type_index type) {
 	Log result(caller, operation, open);
 
 	log_unary(result, type, object, nullptr);
 
 	return result;
 }
-Log Log::as_unary(const Log* caller, bool open, std::type_index type,
-		const Object& object, std::string operation) {
+Log Log::as_unary(const Object& object, std::string operation,
+		const Log* caller, bool open, std::type_index type) {
 	Log result(caller, operation, open);
 
 	log_unary(object, result, type, nullptr);
 
 	return result;
 }
-Log Log::as_binary(const Log* caller, bool open, std::type_index type,
-		const Object& lefthand, std::string operation,
-		const Object& righthand) {
+Log Log::as_binary(const Object& lefthand, std::string operation,
+		const Object& righthand, const Log* caller, bool open,
+		std::type_index type) {
 	Log result(caller, operation, open);
 
 	log_binary(result, type, lefthand, righthand, nullptr);
