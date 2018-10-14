@@ -86,13 +86,10 @@ std::ostringstream Log::log_arguments() {
 }
 void Log::log(std::string logger, std::string message, bool open,
 		const Object* returning) {
-	logger += ": ";
+	logger += ": " + (returning ? (open ? "  }=" : message + "=")
+			+ returning->prints().str() : message + (open ? " {" : ""));
 
-	if (returning)
-		std::clog << logger << (open ? "  }=" : message + "=")
-				<< returning->prints().str() << std::endl;
-	else if (open)
-		std::clog << logger << message << " {" << std::endl;
+	std::clog << logger << std::endl;
 }
 void Log::log_unary(const Log& logging, std::type_index type,
 		const Object& operand, const Object* returning) {
@@ -118,7 +115,7 @@ void Log::log_binary(const Log& logging, std::type_index type,
 			returning);
 }
 void Log::log_return(Log& logging, Object& returning) {
-	log(logging.has_logger(), "=" + returning.prints().str(), logging.open,
+	log(logging.has_logger(), returning.prints().str(), logging.open,
 			&returning);
 	logging.open = false;
 }

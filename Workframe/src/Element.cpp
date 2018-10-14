@@ -3,7 +3,7 @@
  *
  *  Created on: 7 ott 2018
  *      Author: m1rma
- */
+ *
 
 #include "Element.h"
 #include <chrono>
@@ -96,16 +96,20 @@ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	return log.returns(Class<Modifications>(result));
 }
 
-Element::~Element() {
-// TODO Auto-generated destructor stub
-	if (is_running())
-		everything.erase(this);
+Element::Element(Class<std::string> label, const Log* caller,
+			Class<std::map<std::string, std::string>> attributes) :
+		Log(caller, label.is(), false) {
+	as_constructor<false>("base", __func__, caller, attributes);
+	modification = creation = std::chrono::system_clock::now();
+	position = nullptr;
+	this->attributes = attributes;
+	everything.emplace(this);
 }
 
-Element::Element(const Log* caller, std::string label) :
-		Log(caller, label, 4) {
-// TODO Auto-generated constructor stub
-	creation = std::chrono::system_clock::now();
+Element::~Element() {
+	as_destructor("base", __func__);
+	if (is_running())
+		everything.erase(this);
 }
 
 } /* namespace base */

@@ -38,16 +38,16 @@ class Object {
 public:
 	virtual std::ostringstream prints() const = 0;
 protected:
+	const std::string& has_label() const;
+	const std::string& has_logger() const;
+	static std::string makes_track(const Object*);
+
 	Object(const Object*, std::string);
 	virtual ~Object() = default;
 	Object(const Object&);
 	Object& operator =(const Object&);
 	Object(Object&&);
 	Object& operator =(Object&&) = delete;
-
-	const std::string& has_label() const;
-	const std::string& has_logger() const;
-	static std::string makes_track(const Object*);
 };
 
 class Log: virtual public Object {
@@ -76,12 +76,6 @@ class Log: virtual public Object {
 	}
 	static void log_return(Log&, Object&);
 public:
-	virtual ~Log();
-	Log(const Log&) = delete;
-	Log& operator =(const Log&) = delete;
-	Log(Log&&);
-	Log& operator =(Log&&);
-
 	void notes(std::ostringstream) const;
 	Object& returns(Object&) const;
 	Object&& returns(Object&&) const;
@@ -102,9 +96,13 @@ public:
 
 		return result;
 	}
-protected:
-	Log(const Log*, std::string, bool);
 
+	virtual ~Log();
+	Log(const Log&) = delete;
+	Log& operator =(const Log&) = delete;
+	Log(Log&&);
+	Log& operator =(Log&&);
+protected:
 	template<bool Open = true> Log as_unary(std::string operation,
 			const Log* caller = nullptr,
 			std::type_index type = typeid(void)) const {
@@ -126,6 +124,28 @@ protected:
 		return as_method(has_label() + "." + label, Open, caller, type,
 				arguments ...);
 	}
+	template<bool Open = true, typename ... Arguments> void as_constructor(
+			std::string ns, std::string label, const Log* caller = nullptr,
+			Arguments& ... arguments) {
+		Log result(caller, label, Open);
+
+		log(has_logger(),
+				make_scopes(label, ns, label) + "("
+						+ log_arguments(arguments ...) + ")", Open, nullptr);
+
+		return result;
+	}
+	template<bool Open = false, typename ... Arguments> void as_destructor(
+			std::string ns, std::string label) {
+		Log result(nullptr, label, Open);
+
+		log(has_logger(), make_scopes(label, ns, give_substring_after(label, "~")) + "()", Open,
+				nullptr);
+
+		return result;
+	}
+
+	Log(const Log*, std::string, bool);
 };
 
 struct Void final: Object {
@@ -314,8 +334,8 @@ template<typename Type, typename ... Arguments> Class<Type> method_class(
 	return log.returns(Class<Type>(&log, returning));
 }
 template<typename Type, typename ... Arguments> Class<Type> method_class(
-		Type&& returning, const Object& object,
-		std::string label, const Log* caller = nullptr, Arguments& ... arguments) {
+		Type&& returning, const Object& object, std::string label,
+		const Log* caller = nullptr, Arguments& ... arguments) {
 	auto log = as_method(object.has_label() + "." + label, false, caller,
 			typeid(returning), arguments ...);
 
