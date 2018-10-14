@@ -124,7 +124,7 @@ protected:
 		return as_method(has_label() + "." + label, Open, caller, type,
 				arguments ...);
 	}
-	template<bool Open = true, typename ... Arguments> void as_constructor(
+	template<bool Open = true, typename ... Arguments> Log as_constructor(
 			std::string ns, std::string label, const Log* caller = nullptr,
 			Arguments& ... arguments) {
 		Log result(caller, label, Open);
@@ -135,12 +135,14 @@ protected:
 
 		return result;
 	}
-	template<bool Open = false, typename ... Arguments> void as_destructor(
+	template<bool Open = false, typename ... Arguments> Log as_destructor(
 			std::string ns, std::string label) {
 		Log result(nullptr, label, Open);
 
-		log(has_logger(), make_scopes(label, ns, give_substring_after(label, "~")) + "()", Open,
-				nullptr);
+		log(has_logger(),
+				make_scopes(label, ns,
+						give_substring_after(label, "~", false, 1)) + "()",
+				Open, nullptr);
 
 		return result;
 	}
@@ -155,7 +157,7 @@ struct Void final: Object {
 	~Void();
 };
 
-template<typename Type> class Primitive final: Object {
+template<typename Type> class Primitive final: public Object {
 	Type value;
 public:
 	operator Type() const {
@@ -180,7 +182,7 @@ public:
 				<< ">" << value << std::endl;
 	}
 };
-template<> class Primitive<const char*> final: Object {
+template<> class Primitive<const char*> final: public Object {
 	const char* value;
 public:
 	operator const char*() const {
@@ -206,12 +208,15 @@ public:
 	}
 };
 
-template<typename Type> class Class final: Object {
+template<typename Type> class Class final: public Object {
 	Type value;
 public:
 	static std::function<std::ostringstream(Type&)> printer;
 
-	Type& is() const {
+	const Type& is() const {
+		return value;
+	}
+	Type& is() {
 		return value;
 	}
 	Type&& becomes() const {
@@ -221,19 +226,18 @@ public:
 		return printer(value);
 	}
 
-	template<typename ... Arguments> Class(Type value, std::string name =
-			typeid(Type).name(), const Log* caller = nullptr,
+	template<typename ... Arguments> Class(const Log* caller = nullptr,
 			Arguments&& ... arguments) :
-			Object(caller, name), value(arguments ...) {
+			Object(caller, typeid(Type).name()), value(arguments ...) {
 		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
+				<< ">" << prints().str() << std::endl;
 	}
 	~Class() {
 		std::clog << has_logger() << "  " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
+				<< ">" << prints().str() << std::endl;
 	}
 };
-template<> class Class<std::string> final: Object {
+template<> class Class<std::string> final: public Object {
 	std::string value;
 public:
 	const std::string& is() const {

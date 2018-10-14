@@ -3,18 +3,33 @@
  *
  *  Created on: 7 ott 2018
  *      Author: m1rma
- *
+ */
 
 #include "Element.h"
-#include <chrono>
 #include <utility>
 
 namespace base {
 
 std::set<Element*> Element::everything;
 
-time_t Element::exists_from(const Log* caller) const {
-	return method_primitive(creation, *this, __func__, caller);
+std::ostringstream class_std__chrono__system_clock__time_point_(
+		const std::chrono::system_clock::time_point& object) {
+	std::ostringstream result;
+	auto tp = std::chrono::system_clock::to_time_t(object);
+
+	result << ctime(&tp);
+
+	return result;
+}
+template<> std::function<
+		std::ostringstream(const std::chrono::system_clock::time_point&)> Class<
+		const std::chrono::system_clock::time_point>::printer =
+		class_std__chrono__system_clock__time_point_;
+Class<const std::chrono::system_clock::time_point> Element::exists_from(
+		const Log* caller) const {
+	return method_class(
+			std::forward<const std::chrono::system_clock::time_point>(creation),
+			*this, __func__, caller);
 }
 void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
@@ -22,10 +37,10 @@ void Element::is_modified(const Log* caller) {
 }
 
 std::ostringstream class_std__map_std__string_std__string__(
-		Class<std::map<std::string, std::string>>& object) {
+		std::map<std::string, std::string>& object) {
 	std::ostringstream result("{");
 
-	for (auto pair : object.is())
+	for (auto pair : object)
 		result << "\n\t" << pair.first << "=" << pair.second;
 	if (result.str() == "{")
 		result << " }";
@@ -34,12 +49,14 @@ std::ostringstream class_std__map_std__string_std__string__(
 
 	return result;
 }
-std::function<std::ostringstream(std::map<std::string, std::string>&)> Class<
+template<> std::function<std::ostringstream(std::map<std::string, std::string>&)> Class<
 		std::map<std::string, std::string>>::printer =
 		class_std__map_std__string_std__string__;
-Class<std::map<std::string, std::string>> Element::gives_attributes(
+Class<const std::map<std::string, std::string>> Element::gives_attributes(
 		const Log* caller) const {
-	return method_class(attributes, *this, __func__, caller);
+	return method_class(
+			std::forward<const std::map<std::string, std::string>>(attributes),
+			*this, __func__, caller);
 }
 void Element::gets_attributes(
 		Class<std::map<std::string, std::string>> attributes,
@@ -47,14 +64,14 @@ void Element::gets_attributes(
 	auto log = as_method(__func__, caller, typeid(void), attributes);
 
 	last_attributes = this->attributes;
-	this->attributes = attributes;
+	this->attributes = attributes.is();
 	is_modified(caller);
 }
 
-std::ostringstream class_Modifications_(Class<Element::Modifications>& object) {
+std::ostringstream class_Modifications_(Element::Modifications& object) {
 	std::ostringstream result("{");
 
-	for (auto pair : object.is())
+	for (auto pair : object)
 		result << "\n\t" << pair.first << ": " << pair.second.first << " -> "
 				<< pair.second.second;
 	if (result.str() == "{")
@@ -64,7 +81,7 @@ std::ostringstream class_Modifications_(Class<Element::Modifications>& object) {
 
 	return result;
 }
-std::function<std::ostringstream(Class<Element::Modifications>&)> Class<
+template<> std::function<std::ostringstream(Element::Modifications&)> Class<
 		Element::Modifications>::printer = class_Modifications_;
 Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	Modifications result;
@@ -93,11 +110,11 @@ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 					std::make_pair("", attribute.second));
 	}
 
-	return log.returns(Class<Modifications>(result));
+	return log.returns(std::move(Class<Modifications>(&log, std::move(result))));
 }
 
 Element::Element(Class<std::string> label, const Log* caller,
-			Class<std::map<std::string, std::string>> attributes) :
+		Class<std::map<std::string, std::string>> attributes) :
 		Log(caller, label.is(), false) {
 	as_constructor<false>("base", __func__, caller, attributes);
 	modification = creation = std::chrono::system_clock::now();
