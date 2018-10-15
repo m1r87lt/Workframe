@@ -28,11 +28,11 @@ public:
 
 	Class<const std::chrono::system_clock::time_point> exists_from(const Log* =
 			nullptr) const;
-	Class<const std::chrono::system_clock::time_point> since(
-			const Log* = nullptr) const;
-	void is_modified(const Log* = nullptr);
-	Class<const std::map<std::string, std::string>> gives_attributes(const Log* =
+	Class<const std::chrono::system_clock::time_point> since(const Log* =
 			nullptr) const;
+	void is_modified(const Log* = nullptr);
+	Class<const std::map<std::string, std::string>> gives_attributes(
+			const Log* = nullptr) const;
 	void gets_attributes(Class<std::map<std::string, std::string>>, const Log* =
 			nullptr);
 	Class<Modifications> gives_modifications(const Log* = nullptr);

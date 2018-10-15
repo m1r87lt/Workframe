@@ -18,17 +18,17 @@ namespace base {
 bool is_running();
 void ends_run();
 std::string give_substring_after(std::string, std::string, bool, size_t = 1);
+template<typename ... Arguments> std::string make_scopes(std::string label) {
+	return label;
+}
 template<typename ... Arguments> std::string make_scopes(std::string label,
 		std::string ns, Arguments&& ... arguments) {
-	auto recursive = scopes(arguments ...);
+	auto recursive = make_scopes(arguments ...);
 
 	if (ns.empty())
 		recursive = ns + "::" + recursive;
 
 	return recursive;
-}
-template<typename ... Arguments> std::string make_scopes(std::string label) {
-	return label;
 }
 
 class Object {
@@ -56,7 +56,12 @@ class Log: virtual public Object {
 
 	template<typename ... Arguments> static std::ostringstream log_arguments(
 			Object& object, Arguments& ... arguments) {
-		return object.prints() << ", " << log_arguments(arguments ...);
+		std::ostringstream result;
+
+		result << object.prints().str() << ", "
+				<< log_arguments(arguments ...).str();
+
+		return result;
 	}
 	static std::ostringstream log_arguments();
 	static void log(std::string, std::string, bool, const Object*);
@@ -69,7 +74,7 @@ class Log: virtual public Object {
 	template<typename ... Arguments> static void log_method(const Log& logging,
 			std::type_index type, const Object* returning,
 			Arguments&& ... arguments) {
-		log(logging.logger,
+		log(logging.has_logger(),
 				logging.prints().str() + "<" + type.name() + ">("
 						+ log_arguments(arguments ...).str() + ")",
 				logging.open, returning);
@@ -131,7 +136,8 @@ protected:
 
 		log(has_logger(),
 				make_scopes(label, ns, label) + "("
-						+ log_arguments(arguments ...) + ")", Open, nullptr);
+						+ log_arguments(arguments ...).str() + ")", Open,
+				nullptr);
 
 		return result;
 	}
@@ -211,7 +217,7 @@ public:
 template<typename Type> class Class final: public Object {
 	Type value;
 public:
-	static std::function<std::ostringstream(Type&)> printer;
+	static std::function<std::ostringstream(const Type&)> printer;
 
 	const Type& is() const {
 		return value;
@@ -226,7 +232,7 @@ public:
 		return printer(value);
 	}
 
-	template<typename ... Arguments> Class(const Log* caller = nullptr,
+	template<typename ... Arguments> Class(const Log* caller,
 			Arguments&& ... arguments) :
 			Object(caller, typeid(Type).name()), value(arguments ...) {
 		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
@@ -340,10 +346,10 @@ template<typename Type, typename ... Arguments> Class<Type> method_class(
 template<typename Type, typename ... Arguments> Class<Type> method_class(
 		Type&& returning, const Object& object, std::string label,
 		const Log* caller = nullptr, Arguments& ... arguments) {
-	auto log = as_method(object.has_label() + "." + label, false, caller,
-			typeid(returning), arguments ...);
+	auto log = Log::as_method(object.prints().str() + "." + label, false,
+			caller, typeid(returning), arguments ...);
 
-	return log.returns(Class<Type>(&log, returning));
+	return (Class<Type> &&) log.returns(Class<Type>(&log, returning));
 }
 
 } /* namespace base */

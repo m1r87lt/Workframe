@@ -37,7 +37,7 @@ void Element::is_modified(const Log* caller) {
 }
 
 std::ostringstream class_std__map_std__string_std__string__(
-		std::map<std::string, std::string>& object) {
+		const std::map<std::string, std::string>& object) {
 	std::ostringstream result("{");
 
 	for (auto pair : object)
@@ -49,7 +49,8 @@ std::ostringstream class_std__map_std__string_std__string__(
 
 	return result;
 }
-template<> std::function<std::ostringstream(std::map<std::string, std::string>&)> Class<
+template<> std::function<
+		std::ostringstream(const std::map<std::string, std::string>&)> Class<
 		std::map<std::string, std::string>>::printer =
 		class_std__map_std__string_std__string__;
 Class<const std::map<std::string, std::string>> Element::gives_attributes(
@@ -68,7 +69,7 @@ void Element::gets_attributes(
 	is_modified(caller);
 }
 
-std::ostringstream class_Modifications_(Element::Modifications& object) {
+std::ostringstream class_Modifications_(const Element::Modifications& object) {
 	std::ostringstream result("{");
 
 	for (auto pair : object)
@@ -81,7 +82,7 @@ std::ostringstream class_Modifications_(Element::Modifications& object) {
 
 	return result;
 }
-template<> std::function<std::ostringstream(Element::Modifications&)> Class<
+template<> std::function<std::ostringstream(const Element::Modifications&)> Class<
 		Element::Modifications>::printer = class_Modifications_;
 Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	Modifications result;
@@ -110,7 +111,8 @@ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 					std::make_pair("", attribute.second));
 	}
 
-	return log.returns(std::move(Class<Modifications>(&log, std::move(result))));
+	return (Class<Modifications> &&) log.returns(
+			Class<Modifications>(&log, result));
 }
 
 Element::Element(Class<std::string> label, const Log* caller,
@@ -119,7 +121,7 @@ Element::Element(Class<std::string> label, const Log* caller,
 	as_constructor<false>("base", __func__, caller, attributes);
 	modification = creation = std::chrono::system_clock::now();
 	position = nullptr;
-	this->attributes = attributes;
+	this->attributes = attributes.is();
 	everything.emplace(this);
 }
 
