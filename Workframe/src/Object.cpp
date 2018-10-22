@@ -74,10 +74,6 @@ std::ostringstream Void::prints() const {
 
 Void::Void(const Log* caller) :
 		Object(caller, typeid(void).name()) {
-	std::clog << has_logger() << ": " << __func__ << std::endl;
-}
-Void::~Void() {
-	std::clog << has_logger() << "  " << __func__ << std::endl;
 }
 
 //Log

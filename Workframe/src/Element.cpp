@@ -10,9 +10,10 @@
 
 namespace base {
 
+//Element
 std::set<Element*> Element::everything;
 
-std::ostringstream class_std__chrono__system_clock__time_point_(
+std::ostringstream print_std__chrono__system_clock__time_point(
 		const std::chrono::system_clock::time_point& object) {
 	std::ostringstream result;
 	auto tp = std::chrono::system_clock::to_time_t(object);
@@ -24,7 +25,7 @@ std::ostringstream class_std__chrono__system_clock__time_point_(
 template<> std::function<
 		std::ostringstream(const std::chrono::system_clock::time_point&)> Class<
 		const std::chrono::system_clock::time_point>::printer =
-		class_std__chrono__system_clock__time_point_;
+		print_std__chrono__system_clock__time_point;
 Class<const std::chrono::system_clock::time_point> Element::exists_from(
 		const Log* caller) const {
 	return method_class(
@@ -36,23 +37,11 @@ void Element::is_modified(const Log* caller) {
 	modification = std::chrono::system_clock::now();
 }
 
-std::ostringstream class_std__map_std__string_std__string__(
-		const std::map<std::string, std::string>& object) {
-	std::ostringstream result("{");
-
-	for (auto pair : object)
-		result << "\n\t" << pair.first << "=" << pair.second;
-	if (result.str() == "{")
-		result << " }";
-	else
-		result << "\n}";
-
-	return result;
-}
 template<> std::function<
 		std::ostringstream(const std::map<std::string, std::string>&)> Class<
-		std::map<std::string, std::string>>::printer =
-		class_std__map_std__string_std__string__;
+		std::map<std::string, std::string>>::printer = Container_Printer<
+		std::map<std::string, std::string>, std::pair<std::string, std::string>,
+		std::string, std::string, std::string>::print;
 Class<const std::map<std::string, std::string>> Element::gives_attributes(
 		const Log* caller) const {
 	return method_class(
@@ -69,7 +58,7 @@ void Element::gets_attributes(
 	is_modified(caller);
 }
 
-std::ostringstream class_Modifications_(const Element::Modifications& object) {
+std::ostringstream class_modifications_(const Element::Modifications& object) {
 	std::ostringstream result("{");
 
 	for (auto pair : object)
@@ -83,7 +72,7 @@ std::ostringstream class_Modifications_(const Element::Modifications& object) {
 	return result;
 }
 template<> std::function<std::ostringstream(const Element::Modifications&)> Class<
-		Element::Modifications>::printer = class_Modifications_;
+		Element::Modifications>::printer = class_modifications_;
 Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	Modifications result;
 	auto log = as_method(__func__, caller, typeid(decltype(result)));
@@ -117,7 +106,7 @@ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 
 Element::Element(Class<std::string> label, const Log* caller,
 		Class<std::map<std::string, std::string>> attributes) :
-		Log(caller, label.is(), false) {
+		Object(caller, label.is()), Log(caller, label.is(), false) {
 	as_constructor<false>("base", __func__, caller, attributes);
 	modification = creation = std::chrono::system_clock::now();
 	position = nullptr;
@@ -130,5 +119,43 @@ Element::~Element() {
 	if (is_running())
 		everything.erase(this);
 }
+/*
+//Ensemble
+Element& Ensemble::operator [](Primitive<size_t> position) const {
+	auto log = as_binary("[]", position, nullptr, typeid(Element&));
 
+	return log.returns(*finds(position).is()->second);
+}
+
+std::ostringstream class_std__map_size_t__element___(
+		const std::map<size_t, Ensemble*>& results) {
+	std::ostringstream result("{");
+
+	for (auto position : results)
+		result << "\n\t" << position.first << ": " << position.second;
+	if (result.str() == "{")
+		result << " ";
+
+	return result;
+}
+template<> std::function<
+		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
+		std::tuple<Ensemble*, size_t, std::string>>::printer =
+		class_std__tuple_Ensemble__size_t__std__string__;
+Class<std::map<size_t, Element*>> operator [](Class<std::string>) const;
+
+std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
+		const std::tuple<Ensemble*, size_t, std::string>& position) {
+	std::ostringstream result("{ ");
+
+	result << std::get<0>(position) << "; " << std::get<1>(position) << "; \""
+			<< std::get<2>(position) << "\" }";
+
+	return result;
+}
+template<> std::function<
+		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
+		std::tuple<Ensemble*, size_t, std::string>>::printer =
+		class_std__tuple_Ensemble__size_t__std__string__;
+*/
 } /* namespace base */

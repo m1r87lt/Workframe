@@ -12,6 +12,7 @@
 #include <typeindex>
 #include <iostream>
 #include <functional>
+#include <utility>
 
 namespace base {
 
@@ -160,7 +161,6 @@ struct Void final: Object {
 	virtual std::ostringstream prints() const;
 
 	Void(const Log*);
-	~Void();
 };
 
 template<typename Type> class Primitive final: public Object {
@@ -180,12 +180,11 @@ public:
 	Primitive(Type value, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()) {
 		this->value = value;
-		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
 	}
-	~Primitive() {
-		std::clog << has_logger() << "  " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
+	Primitive& operator =(Type value) {
+		this->value = value;
+
+		return *this;
 	}
 };
 template<> class Primitive<const char*> final: public Object {
@@ -205,12 +204,11 @@ public:
 	Primitive(const char* value, const Log* caller = nullptr) :
 			Object(caller, value) {
 		this->value = value;
-		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
 	}
-	~Primitive() {
-		std::clog << has_logger() << "  " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
+	Primitive& operator =(const char* value) {
+		this->value = value;
+
+		return *this;
 	}
 };
 
@@ -235,12 +233,22 @@ public:
 	template<typename ... Arguments> Class(const Log* caller,
 			Arguments&& ... arguments) :
 			Object(caller, typeid(Type).name()), value(arguments ...) {
-		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
-				<< ">" << prints().str() << std::endl;
 	}
-	~Class() {
-		std::clog << has_logger() << "  " << __func__ << "<" << has_label()
-				<< ">" << prints().str() << std::endl;
+	Class(Type& copy, const Log* caller = nullptr) :
+			Object(caller, typeid(Type).name()), value(copy) {
+	}
+	Class<Type>& operator =(Type& copy) {
+		value = copy;
+
+		return *this;
+	}
+	Class(Type&& copy, const Log* caller = nullptr) :
+			Object(caller, typeid(Type).name()), value(std::move(copy)) {
+	}
+	Class<Type>& operator =(Type&& copy) {
+		value = std::move(copy);
+
+		return *this;
 	}
 };
 template<> class Class<std::string> final: public Object {
@@ -266,12 +274,11 @@ public:
 	Class(std::string value, const Log* caller = nullptr) :
 			Object(caller, value) {
 		this->value = value;
-		std::clog << has_logger() << ": " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
 	}
-	~Class() {
-		std::clog << has_logger() << "  " << __func__ << "<" << has_label()
-				<< ">" << value << std::endl;
+	Class<std::string>& operator =(std::string copy) {
+		value = copy;
+
+		return *this;
 	}
 };
 
@@ -280,7 +287,7 @@ template<typename Type> Primitive<Type> unary_primitive(std::string operation,
 	auto log = Log::as_unary(operation, object, caller, false,
 			typeid(returning));
 
-	return log.returns(Primitive<Type>(&log, returning));
+	return log.returns(Class<Type>(&log, returning));
 }
 template<typename Type> Class<Type> unary_class(std::string operation,
 		const Object& object, Type&& returning, const Log* caller = nullptr) {
