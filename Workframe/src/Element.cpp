@@ -39,8 +39,7 @@ void Element::is_modified(const Log* caller) {
 template<> std::function<
 		std::ostringstream(const std::map<std::string, std::string>&)> Class<
 		std::map<std::string, std::string>>::printer = Container_Printer<
-		std::map<std::string, std::string>,
-		std::string, std::string, std::string>::print;
+		std::map<std::string, std::string>>::map_print;
 Class<const std::map<std::string, std::string>> Element::gives_attributes(
 		const Log* caller) const {
 	return method_class(
@@ -57,7 +56,7 @@ void Element::gets_attributes(
 	is_modified(caller);
 }
 
-std::ostringstream class_modifications_(const Element::Modifications& object) {
+std::ostringstream print_modifications(const Element::Modifications& object) {
 	std::ostringstream result("{");
 
 	for (auto pair : object)
@@ -71,7 +70,7 @@ std::ostringstream class_modifications_(const Element::Modifications& object) {
 	return result;
 }
 template<> std::function<std::ostringstream(const Element::Modifications&)> Class<
-		Element::Modifications>::printer = class_modifications_;
+		Element::Modifications>::printer = print_modifications;
 Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	Modifications result;
 	auto log = as_method(__func__, caller, typeid(decltype(result)));
