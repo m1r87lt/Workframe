@@ -19,13 +19,22 @@
 #include <vector>
 
 namespace base {
-template<typename Container, typename ... Types> class Container_Printer {
-	template<typename Content, typename Parameter, typename ... Parameters> class Content_Printer {
-		Content content;
-	public:
-		std::list<std::string> content_list;
+template<typename Container, typename ... Separators> class Container_Printer {
+	template<typename ... Types> struct Content_Printer {
+		template<typename Content, typename Parameter, typename ... Parameters> class Content_Getter {
+			template<size_t N = sizeof...(Types) - sizeof...(Parameters) - 1> std::list<std::string>
+					get(const Content& content) const {
+				auto result = get<Content, Parameters ...>(content);
+				std::ostringstream print;
 
-		template<size_t N = sizeof...(Types) - sizeof...(Parameters) - 1> static std::list<
+				print << std::get<N>(content);
+				result.emplace_front(print.str());
+
+				return result;
+			}
+		};
+
+		template<size_t M = sizeof...(Types) - sizeof...(Parameters) - 1> static std::list<
 				std::string> content_print(Parameter parameter,
 				Parameters ... parameters) const {
 			auto result = print(content, parameters ...);
@@ -82,7 +91,7 @@ public:
 				"\t", ": ")();
 	}
 
-	Container_Printer(const Container& container, Separators&& ... separators) {
+	Container_Printer(const Container& container) {
 		auto separator_list = prepares_separators(separators ...);
 		auto separator_size = separator_list.size();
 		auto content_size = T + 1;
