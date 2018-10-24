@@ -33,83 +33,61 @@ template<typename Container, typename ... Separators> class Container_Printer {
 	std::list<std::string> prepares_separators() const {
 		return std::list<std::string>();
 	}
-	template<typename Type, typename ... Rest> std::list<std::string> prints(
-			const std::tuple<Type, Rest ...>& content) const {
-		Type type;
-		std::tie(type, std::ignore ...) = content;
-		auto result = prints(std::make_tuple());
-		std::ostringstream print;
+	template<size_t I, typename ... Types> std::list<std::string> prints(
+			const std::tuple<Types ...>& content) const {
+		std::list<std::string> result;
 
-		print << type;
-		result.emplate_front(print.str());
+		if (I < sizeof...(Types)) {
+			std::ostringstream print;
+
+			print << std::get<I>(content);
+			result = prints<++I>(content);
+			result.emplace_front(print.str());
+		}
 
 		return result;
-	}
-	std::list<std::string> prints() const {
-		return std::list<std::string>();
 	}
 public:
 	std::string operator ()() const {
 		return print;
 	}
-	static std::ostringstream simple_print(const Container& container,
-			Separators&& ... separators) {
-		std::list < std::tuple < Content >> buffer;
+	static std::ostringstream simple_content(const Container& container,
+			std::string former_separator, std::string last_separator) {
+		std::ostringstream result("{");
 
 		for (auto content : container)
-			buffer.emplace(content);
+			result << "\n" << former_separator << content << last_separator;
+		result << (result.str() == "{" ? " " : "\n") << "}";
 
-		return Container_Printer(buffer, separators ...)();
+		return result;
 	}
-	static std::ostringstream print(const Container& container) {
-		return Container_Printer(container)();
+	static std::ostringstream simple_print(const Container& container) {
+		return simple_content(container, "\t", "");
+	}
+	static std::ostringstream map_print(const Container& container) {
+		return Container_Printer(container, std::string("\t"), std::string(": "))();
 	}
 
 	Container_Printer(const Container& container, Separators&& ... separators) {
 		auto separator_list = prepares_separators(separators ...);
+		auto size = std::tuple_size<decltype(Container::value_type)>::size;
 
+		separator_list.resize(
+				size,
+				std::string("\t"));
+		if ()
 		text << "{";
 		for (auto content : container) {
-			size_t i = 0;
-			size_t size = std::tuple_size<decltype(content)>::size;
+			auto content_list = prints<0>(content);
+			auto end = content_list.end();
+			auto separator = separator_list.begin();
 
-			if (separator_number > size)
-				separator_number = size + 1;
 			text << "\n";
-			while (i < separator_number && i < size) {
-				const size_t j = i++;
-
-				text << separators[j] << std::get<j>(content);
-			}
-			while (i < size)
-				text << "\t" << std::get<i++>(content);
-			if (i < separator_number && i == size)
-				text << separators[i];
+			for (auto iterator = content_list.begin(); iterator != end;
+					++iterator)
+				text << *separator++ << *iterator;
+			text << *separator;
 		}
-		text << (text.str() == "{" ? " " : "\n") << "}";
-	}
-	Container_Printer(const Container_Printer&) = delete;
-	Container_Printer& operator =(const Container_Printer&) = delete;
-	Container_Printer(Container_Printer&&) = delete;
-	Container_Printer& operator =(Container_Printer&&) = delete;
-};
-template<typename First, typename Second> class Container_Printer<
-		std::map<First, Second>, std::pair<First, Second>, std::string,
-		std::string, std::string> {
-	std::ostringstream text;
-public:
-	std::ostringstream operator ()() const {
-		return text;
-	}
-	static std::ostringstream print(const std::map<First, Second>& container) {
-		return Container_Printer(container, ": ");
-	}
-
-	Container_Printer(const std::map<First, Second>& container,
-			std::string separator) {
-		text << "{";
-		for (auto content : container)
-			text << "\n\t" << content.first << separator << content.second;
 		text << (text.str() == "{" ? " " : "\n") << "}";
 	}
 	Container_Printer(const Container_Printer&) = delete;

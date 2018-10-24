@@ -6,7 +6,6 @@
  */
 
 #include "Element.h"
-#include <utility>
 
 namespace base {
 
@@ -40,7 +39,7 @@ void Element::is_modified(const Log* caller) {
 template<> std::function<
 		std::ostringstream(const std::map<std::string, std::string>&)> Class<
 		std::map<std::string, std::string>>::printer = Container_Printer<
-		std::map<std::string, std::string>, std::pair<std::string, std::string>,
+		std::map<std::string, std::string>,
 		std::string, std::string, std::string>::print;
 Class<const std::map<std::string, std::string>> Element::gives_attributes(
 		const Log* caller) const {
@@ -120,42 +119,42 @@ Element::~Element() {
 		everything.erase(this);
 }
 /*
-//Ensemble
-Element& Ensemble::operator [](Primitive<size_t> position) const {
-	auto log = as_binary("[]", position, nullptr, typeid(Element&));
+ //Ensemble
+ Element& Ensemble::operator [](Primitive<size_t> position) const {
+ auto log = as_binary("[]", position, nullptr, typeid(Element&));
 
-	return log.returns(*finds(position).is()->second);
-}
+ return log.returns(*finds(position).is()->second);
+ }
 
-std::ostringstream class_std__map_size_t__element___(
-		const std::map<size_t, Ensemble*>& results) {
-	std::ostringstream result("{");
+ std::ostringstream class_std__map_size_t__element___(
+ const std::map<size_t, Ensemble*>& results) {
+ std::ostringstream result("{");
 
-	for (auto position : results)
-		result << "\n\t" << position.first << ": " << position.second;
-	if (result.str() == "{")
-		result << " ";
+ for (auto position : results)
+ result << "\n\t" << position.first << ": " << position.second;
+ if (result.str() == "{")
+ result << " ";
 
-	return result;
-}
-template<> std::function<
-		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
-		std::tuple<Ensemble*, size_t, std::string>>::printer =
-		class_std__tuple_Ensemble__size_t__std__string__;
-Class<std::map<size_t, Element*>> operator [](Class<std::string>) const;
+ return result;
+ }
+ template<> std::function<
+ std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
+ std::tuple<Ensemble*, size_t, std::string>>::printer =
+ class_std__tuple_Ensemble__size_t__std__string__;
+ Class<std::map<size_t, Element*>> operator [](Class<std::string>) const;
 
-std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
-		const std::tuple<Ensemble*, size_t, std::string>& position) {
-	std::ostringstream result("{ ");
+ std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
+ const std::tuple<Ensemble*, size_t, std::string>& position) {
+ std::ostringstream result("{ ");
 
-	result << std::get<0>(position) << "; " << std::get<1>(position) << "; \""
-			<< std::get<2>(position) << "\" }";
+ result << std::get<0>(position) << "; " << std::get<1>(position) << "; \""
+ << std::get<2>(position) << "\" }";
 
-	return result;
-}
-template<> std::function<
-		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
-		std::tuple<Ensemble*, size_t, std::string>>::printer =
-		class_std__tuple_Ensemble__size_t__std__string__;
-*/
+ return result;
+ }
+ template<> std::function<
+ std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
+ std::tuple<Ensemble*, size_t, std::string>>::printer =
+ class_std__tuple_Ensemble__size_t__std__string__;
+ */
 } /* namespace base */
