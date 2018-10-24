@@ -19,12 +19,37 @@
 #include <vector>
 
 namespace base {
-template<typename Container, typename ... Separators,
-		typename Content = typename Container::value_type, size_t T =
-				std::tuple_size<Content>::value> class Container_Printer {
+template<typename Container, typename ... Types> class Container_Printer {
+	template<typename Content, typename Parameter, typename ... Parameters> class Content_Printer {
+		Content content;
+	public:
+		std::list<std::string> content_list;
+
+		template<size_t N = sizeof...(Types) - sizeof...(Parameters) - 1> static std::list<
+				std::string> content_print(Parameter parameter,
+				Parameters ... parameters) const {
+			auto result = print(content, parameters ...);
+			std::ostringstream print;
+
+			print << std::get<N>(content);
+			result.emplace_front(print.str());
+
+			return result;
+		}
+		static std::list<std::string> content_print() const {
+			return std::list<std::string>();
+		}
+
+		Content_Printer(const Content& content, Parameter parameter,
+				Parameters ... parameters) {
+			this->content = content;
+			content_list = print(parameter, parameters ...);
+		}
+	};
+
 	std::string text;
 
-	template<typename ... Rest> std::list<std::string> prepares_separators(
+	template<typename ... Rest> static std::list<std::string> prepare_separators(
 			std::string separator, Rest&& ... rest) const {
 		auto result = prepares_separators(rest ...);
 
@@ -32,18 +57,8 @@ template<typename Container, typename ... Separators,
 
 		return result;
 	}
-	std::list<std::string> prepares_separators() const {
+	std::list<std::string> static prepare_separators() const {
 		return std::list<std::string>();
-	}
-	template<typename Type, typename ... Types, size_t N = sizeof...(Types)> std::list<
-			std::string> prints(const Content& content) const {
-		auto result = prints<Types ...>(content);
-		std::ostringstream print;
-
-		print << std::get<N>(content);
-		result.emplace_front(print.str());
-
-		return result;
 	}
 public:
 	std::ostringstream operator ()() const {
