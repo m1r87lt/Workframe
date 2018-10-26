@@ -21,10 +21,10 @@
 namespace base {
 template<typename Container, typename ... Separators> class Container_Printer {
 	template<typename ... Types> struct Content_Printer {
-		template<typename Content, typename Parameter, typename ... Parameters> class Content_Getter {
-			template<size_t N = sizeof...(Types) - sizeof...(Parameters) - 1> std::list<std::string>
-					get(const Content& content) const {
-				auto result = get<Content, Parameters ...>(content);
+		template<typename Parameter, typename ... Parameters> struct Content_Getter {
+			template<size_t N = sizeof...(Types) - sizeof...(Parameters) - 1> static std::list<
+					std::string> get(const std::tuple<Types ...>& content) {
+				auto result = Content_Getter<Parameters ...>::get();
 				std::ostringstream print;
 
 				print << std::get<N>(content);
@@ -33,47 +33,31 @@ template<typename Container, typename ... Separators> class Container_Printer {
 				return result;
 			}
 		};
-
-		template<size_t M = sizeof...(Types) - sizeof...(Parameters) - 1> static std::list<
-				std::string> content_print(Parameter parameter,
-				Parameters ... parameters) const {
-			auto result = print(content, parameters ...);
-			std::ostringstream print;
-
-			print << std::get<N>(content);
-			result.emplace_front(print.str());
-
-			return result;
-		}
-		static std::list<std::string> content_print() const {
-			return std::list<std::string>();
-		}
-
-		Content_Printer(const Content& content, Parameter parameter,
-				Parameters ... parameters) {
-			this->content = content;
-			content_list = print(parameter, parameters ...);
-		}
 	};
 
 	std::string text;
 
 	template<typename ... Rest> static std::list<std::string> prepare_separators(
-			std::string separator, Rest&& ... rest) const {
+			std::string separator, Rest&& ... rest) {
 		auto result = prepares_separators(rest ...);
 
 		result.emplace_front(separator);
 
 		return result;
 	}
-	std::list<std::string> static prepare_separators() const {
+	std::list<std::string> static prepare_separators() {
 		return std::list<std::string>();
+	}
+	template<typename ... Types> static std::list<std::string> print_content(
+			const std::tuple<Types ...>& content) {
+		return Content_Printer<Types ...>::Content_Getter::get(
+				content);
 	}
 public:
 	std::ostringstream operator ()() const {
 		return std::ostringstream(text);
 	}
-	static std::ostringstream simple_content(const Container& container,
+	static std::ostringstream give_simple_container(const Container& container,
 			std::string former_separator, std::string last_separator) {
 		std::ostringstream result("{");
 
@@ -83,23 +67,24 @@ public:
 
 		return result;
 	}
-	static std::ostringstream simple_print(const Container& container) {
-		return simple_content(container, "\t", "");
+	static std::ostringstream print_simple_content(const Container& container) {
+		return give_simple_container(container, "\t", "");
 	}
-	static std::ostringstream map_print(const Container& container) {
-		return Container_Printer<Container, std::string, std::string>(container,
-				"\t", ": ")();
+	template<typename First, typename Second> static std::ostringstream map_print(
+			const std::map<First, Second>& container) {
+		return Container_Printer<std::map<First, Second>>(container, "\t", ": ")();
 	}
 
-	Container_Printer(const Container& container) {
-		auto separator_list = prepares_separators(separators ...);
+	Container_Printer(const Container& container, Separators&& ... separators) {
+		auto separator_list = prepare_separators(separators ...);
 		auto separator_size = separator_list.size();
-		auto content_size = T + 1;
+		auto content_size =
+				std::tuple_size<typename Container::value_type>::value;
 
-		if (separator_size < content_size) {
+		if (separator_size < content_size + 1) {
 			separator_list.resize(content_size, "\t");
 			separator_list.back() = separator_list.front() == "{" ? "}" : "";
-		} else if (separator_size > content_size) {
+		} else if (separator_size > content_size + 1) {
 			auto back = separator_list.back();
 
 			separator_list.resize(content_size);
@@ -107,12 +92,12 @@ public:
 		}
 		text = "{";
 		for (auto content : container) {
-			auto content_list = prints<>(content);
-			auto end = content_list.end();
+			auto content_list = print_content(content);
+			auto content_end = content_list.end();
 			auto separator = separator_list.begin();
 
 			text += "\n";
-			for (auto iterator = content_list.begin(); iterator != end;
+			for (auto iterator = content_list.begin(); iterator != content_end;
 					++iterator)
 				text += *separator++ + *iterator;
 			text += *separator;

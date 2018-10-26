@@ -35,7 +35,7 @@ void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
 	modification = std::chrono::system_clock::now();
 }
-
+/*
 template<> std::function<
 		std::ostringstream(const std::map<std::string, std::string>&)> Class<
 		std::map<std::string, std::string>>::printer = Container_Printer<
