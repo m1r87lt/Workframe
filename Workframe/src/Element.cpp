@@ -35,89 +35,90 @@ void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
 	modification = std::chrono::system_clock::now();
 }
-/*
+
 template<> std::function<
 		std::ostringstream(const std::map<std::string, std::string>&)> Class<
-		std::map<std::string, std::string>>::printer = Container_Printer<
-		std::map<std::string, std::string>>::map_print;
-Class<const std::map<std::string, std::string>> Element::gives_attributes(
-		const Log* caller) const {
-	return method_class(
-			std::forward<const std::map<std::string, std::string>>(attributes),
-			*this, __func__, caller);
-}
-void Element::gets_attributes(
-		Class<std::map<std::string, std::string>> attributes,
-		const Log* caller) {
-	auto log = as_method(__func__, caller, typeid(void), attributes);
+		std::map<std::string, std::string>>::printer =
+		Container_Printer<std::map<std::string, std::string>, std::string,
+				std::string>::map_print<std::string, std::string>;
+/*Class<const std::map<std::string, std::string>> Element::gives_attributes(
+ const Log* caller) const {
+ return method_class(
+ std::forward<const std::map<std::string, std::string>>(attributes),
+ *this, __func__, caller);
+ }
+ void Element::gets_attributes(
+ Class<std::map<std::string, std::string>> attributes,
+ const Log* caller) {
+ auto log = as_method(__func__, caller, typeid(void), attributes);
 
-	last_attributes = this->attributes;
-	this->attributes = attributes.is();
-	is_modified(caller);
-}
+ last_attributes = this->attributes;
+ this->attributes = attributes.is();
+ is_modified(caller);
+ }
 
-std::ostringstream print_modifications(const Element::Modifications& object) {
-	std::ostringstream result("{");
+ std::ostringstream print_modifications(const Element::Modifications& object) {
+ std::ostringstream result("{");
 
-	for (auto pair : object)
-		result << "\n\t" << pair.first << ": " << pair.second.first << " -> "
-				<< pair.second.second;
-	if (result.str() == "{")
-		result << " }";
-	else
-		result << "\n}";
+ for (auto pair : object)
+ result << "\n\t" << pair.first << ": " << pair.second.first << " -> "
+ << pair.second.second;
+ if (result.str() == "{")
+ result << " }";
+ else
+ result << "\n}";
 
-	return result;
-}
-template<> std::function<std::ostringstream(const Element::Modifications&)> Class<
-		Element::Modifications>::printer = print_modifications;
-Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
-	Modifications result;
-	auto log = as_method(__func__, caller, typeid(decltype(result)));
-	auto end = attributes.end();
-	auto last_end = last_attributes.end();
+ return result;
+ }
+ template<> std::function<std::ostringstream(const Element::Modifications&)> Class<
+ Element::Modifications>::printer = print_modifications;
+ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
+ Modifications result;
+ auto log = as_method(__func__, caller, typeid(decltype(result)));
+ auto end = attributes.end();
+ auto last_end = last_attributes.end();
 
-	for (auto last_attribute : last_attributes) {
-		auto last_first = last_attribute.first;
-		auto last_second = last_attribute.second;
+ for (auto last_attribute : last_attributes) {
+ auto last_first = last_attribute.first;
+ auto last_second = last_attribute.second;
 
-		if (attributes.find(last_first) == end)
-			result.emplace(last_first, std::make_pair(last_second, ""));
-		else {
-			auto second = attributes.at(last_first);
+ if (attributes.find(last_first) == end)
+ result.emplace(last_first, std::make_pair(last_second, ""));
+ else {
+ auto second = attributes.at(last_first);
 
-			if (second != last_second)
-				result.emplace(last_first, std::make_pair(last_second, second));
-		}
-	}
-	for (auto attribute : attributes) {
-		auto first = attribute.first;
+ if (second != last_second)
+ result.emplace(last_first, std::make_pair(last_second, second));
+ }
+ }
+ for (auto attribute : attributes) {
+ auto first = attribute.first;
 
-		if (last_attributes.find(first) == last_end)
-			result.emplace(attribute.first,
-					std::make_pair("", attribute.second));
-	}
+ if (last_attributes.find(first) == last_end)
+ result.emplace(attribute.first,
+ std::make_pair("", attribute.second));
+ }
 
-	return (Class<Modifications> &&) log.returns(
-			Class<Modifications>(&log, result));
-}
+ return (Class<Modifications> &&) log.returns(
+ Class<Modifications>(&log, result));
+ }
 
-Element::Element(Class<std::string> label, const Log* caller,
-		Class<std::map<std::string, std::string>> attributes) :
-		Object(caller, label.is()), Log(caller, label.is(), false) {
-	as_constructor<false>("base", __func__, caller, attributes);
-	modification = creation = std::chrono::system_clock::now();
-	position = nullptr;
-	this->attributes = attributes.is();
-	everything.emplace(this);
-}
+ Element::Element(Class<std::string> label, const Log* caller,
+ Class<std::map<std::string, std::string>> attributes) :
+ Object(caller, label.is()), Log(caller, label.is(), false) {
+ as_constructor<false>("base", __func__, caller, attributes);
+ modification = creation = std::chrono::system_clock::now();
+ position = nullptr;
+ this->attributes = attributes.is();
+ everything.emplace(this);
+ }
 
-Element::~Element() {
-	as_destructor("base", __func__);
-	if (is_running())
-		everything.erase(this);
-}
-/*
+ Element::~Element() {
+ as_destructor("base", __func__);
+ if (is_running())
+ everything.erase(this);
+ }
+ /*
  //Ensemble
  Element& Ensemble::operator [](Primitive<size_t> position) const {
  auto log = as_binary("[]", position, nullptr, typeid(Element&));

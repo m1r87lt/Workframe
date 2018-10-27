@@ -19,27 +19,32 @@
 #include <vector>
 
 namespace base {
+template<typename ... Types> class Content_Printer {
+	std::tuple<Types ...> content;
+
+	template<typename Parameter, typename ... Parameters> static std::list<
+			std::string> give(const std::tuple<Types ...>& content) {
+		auto result = give<Parameters ...>(content);
+		std::ostringstream print;
+
+		print
+				<< std::get<sizeof...(Types) - sizeof...(Parameters) - 1>(
+						content);
+		result.emplace_front(print.str());
+
+		return result;
+	}
+public:
+	Content_Printer(const std::tuple<Types ...>& content) {
+		this->content = content;
+	}
+};
 template<typename Container, typename ... Separators> class Container_Printer {
-	template<typename ... Types> struct Content_Printer {
-		template<typename Parameter, typename ... Parameters> struct Content_Getter {
-			template<size_t N = sizeof...(Types) - sizeof...(Parameters) - 1> static std::list<
-					std::string> get(const std::tuple<Types ...>& content) {
-				auto result = Content_Getter<Parameters ...>::get();
-				std::ostringstream print;
-
-				print << std::get<N>(content);
-				result.emplace_front(print.str());
-
-				return result;
-			}
-		};
-	};
-
 	std::string text;
 
 	template<typename ... Rest> static std::list<std::string> prepare_separators(
 			std::string separator, Rest&& ... rest) {
-		auto result = prepares_separators(rest ...);
+		auto result = prepare_separators(rest ...);
 
 		result.emplace_front(separator);
 
@@ -50,8 +55,13 @@ template<typename Container, typename ... Separators> class Container_Printer {
 	}
 	template<typename ... Types> static std::list<std::string> print_content(
 			const std::tuple<Types ...>& content) {
-		return Content_Printer<Types ...>::Content_Getter::get(
-				content);
+		return Content_Printer<Types ...>::give(content);
+	}
+	template<typename First, typename Second> static std::list<std::string> print_content(
+			const std::pair<First, Second>& content) {
+		std::tuple<First, Second> result = content;
+
+		return print_content(result);
 	}
 public:
 	std::ostringstream operator ()() const {
@@ -72,7 +82,8 @@ public:
 	}
 	template<typename First, typename Second> static std::ostringstream map_print(
 			const std::map<First, Second>& container) {
-		return Container_Printer<std::map<First, Second>>(container, "\t", ": ")();
+		return Container_Printer<std::map<First, Second>, std::string,
+				std::string>(container, "\t", ": ")();
 	}
 
 	Container_Printer(const Container& container, Separators&& ... separators) {
