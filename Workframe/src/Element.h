@@ -189,7 +189,7 @@ struct Ensemble: public Element {
 	void takes(Ensemble*, Class<std::string>, Primitive<size_t>, const Log* =
 			nullptr);
 	Primitive<size_t> has_size(const Log* = nullptr) const;
-	void self_clears();
+	void self_clears(const Log* = nullptr);
 	template<typename Type, typename ... Arguments> void generates(
 			Class<std::string> name, Primitive<size_t> position = 0,
 			const Log* caller = nullptr, Arguments&& ... arguments) {
@@ -209,15 +209,19 @@ struct Ensemble: public Element {
 			nullptr);
 	static Class<std::tuple<Ensemble*, Primitive<size_t>, std::string>> localize(
 			const Element&, const Log* = nullptr);
-	static Class<std::vector<std::string>> have_path(const Element&);
+	static Class<std::vector<std::string>> have_path(const Element&,
+			const Log* = nullptr);
 private:
 	Container container;
 
-	Class<Container::iterator> localizes(Primitive<size_t>) const;
-	Primitive<size_t> localizes(Class<Container::iterator>) const;
-	Class<std::set<Container::iterator>> finds(Class<std::string>) const;
-	static Class<std::pair<Ensemble*, Container::iterator>> find(
-			const Element*);
+	Class<Container::iterator> localizes(Primitive<size_t>,
+			const Log* = nullptr) const;
+	Primitive<size_t> localizes(Class<Container::iterator>,
+			const Log* = nullptr) const;
+	Class<std::set<Container::iterator>> finds(Class<std::string>, const Log* =
+			nullptr) const;
+	static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
+			const Log* = nullptr);
 };
 
 } /* namespace base */

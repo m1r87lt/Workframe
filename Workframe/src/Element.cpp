@@ -77,7 +77,7 @@ template<> std::function<std::ostringstream(const Element::Modifications&)> Clas
 		Element::Modifications>::printer = print_modifications;
 Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	Modifications result;
-	auto log = as_method(__func__, caller, typeid(decltype(result)));
+	auto log = as_method(__func__, caller, typeid(Class<decltype(result)> ));
 	auto end = attributes.end();
 	auto last_end = last_attributes.end();
 
@@ -158,7 +158,8 @@ Class<std::unique_ptr<Element>>& Class<std::unique_ptr<Element>>::operator =(
 Element& Ensemble::operator [](Primitive<size_t> position) const {
 	auto log = as_binary("[]", position, nullptr, typeid(Element&));
 
-	return dynamic_cast<Element&>(log.returns(*localizes(position).is()->second));
+	return dynamic_cast<Element&>(log.returns(
+			*localizes(position, &log).is()->second));
 }
 
 template<> std::function<std::ostringstream(const std::map<size_t, Ensemble*>&)> Class<
@@ -166,14 +167,22 @@ template<> std::function<std::ostringstream(const std::map<size_t, Ensemble*>&)>
 		print_std__map<size_t, Ensemble*>;
 Class<std::map<size_t, Element*>> Ensemble::operator [](
 		Class<std::string> name) const {
-	auto log = as_binary("[]", name, nullptr, typeid(Element&));
 	std::map<size_t, Element*> result;
+	auto log = as_binary("[]", name, nullptr,
+			typeid(Class<decltype(result)> ));
 
 	for (auto found : finds(name).becomes())
 		result[localizes(found)] = found->second.get();
 
-	return static_cast<Class<std::map<size_t, Element*>> &&>(log.returns(
+	return static_cast<Class<decltype(result)> &&>(log.returns(
 			Class<std::map<size_t, Element*>>(&log, result)));
+}
+Primitive<size_t> Ensemble::which_is(Class<std::string> name,
+		const Log* caller) const {
+	size_t result;
+	auto log = as_method(__func__, caller, typeid(decltype(result)), name);
+
+	finds(name);
 }
 /////////////////////////////////
 std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
@@ -190,16 +199,13 @@ template<> std::function<
 		std::tuple<Ensemble*, size_t, std::string>>::printer =
 		class_std__tuple_Ensemble__size_t__std__string__;
 /////////////////////////////////
-Primitive<size_t> Ensemble::which_is(Class<std::string>, const Log* = nullptr) const;
 Class<std::string> who_is(Primitive<size_t>, const Log* = nullptr) const;
-Class<std::unique_ptr<Element>> gives(Primitive<size_t>, const Log* =
-		nullptr);
-Class<std::unique_ptr<Element>> gives(Class<std::string>, const Log* =
-		nullptr);
+Class<std::unique_ptr<Element>> gives(Primitive<size_t>, const Log* = nullptr);
+Class<std::unique_ptr<Element>> gives(Class<std::string>, const Log* = nullptr);
 void gets(Class<std::string>, Class<std::unique_ptr<Element>> &&,
 		Primitive<size_t>, const Log* = nullptr);
-void takes(Ensemble*, Primitive<size_t>, Primitive<size_t>, const Log* =
-		nullptr);
+void takes(Ensemble*, Primitive<size_t>, Primitive<size_t>,
+		const Log* = nullptr);
 void takes(Ensemble*, Class<std::string>, Primitive<size_t>, const Log* =
 		nullptr);
 Primitive<size_t> has_size(const Log* = nullptr) const;
@@ -207,8 +213,8 @@ void self_clears();
 static Primitive<size_t> which_be(const Element&, const Log* = nullptr);
 static Class<std::string> who_be(const Element&, const Log* = nullptr);
 static Primitive<Ensemble*> where_be(const Element&, const Log* = nullptr);
-static Class<std::unique_ptr<Element>> pop(const Element&, const Log* =
-		nullptr);
+static Class<std::unique_ptr<Element>> pop(const Element&,
+		const Log* = nullptr);
 static void take(Ensemble*, Primitive<size_t>, const Element&, const Log* =
 		nullptr);
 static Class<std::tuple<Ensemble*, Primitive<size_t>, std::string>> localize(
@@ -217,9 +223,12 @@ static Class<std::vector<std::string>> have_path(const Element&);
 private:
 Container container;
 
-Class<Container::iterator> localizes(Primitive<size_t>) const;
-Primitive<size_t> localizes(Class<Container::iterator>) const;
-Class<std::set<Container::iterator>> finds(Class<std::string>) const;
-static Class<std::pair<Ensemble*, Container::iterator>> find(
-		const Element*);
+Class<Container::iterator> localizes(Primitive<size_t>,
+		const Log* = nullptr) const;
+Primitive<size_t> localizes(Class<Container::iterator>,
+		const Log* = nullptr) const;
+Class<std::set<Container::iterator>> finds(Class<std::string>, const Log* =
+		nullptr) const;
+static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
+		const Log* = nullptr);
 } /* namespace base */
