@@ -187,14 +187,14 @@ public:
 		return *this;
 	}
 };
-template<> class Primitive<const char*> final: public Object {
+template class Primitive<const char*> final: public Object {
 	const char* value;
 public:
 	operator const char*() const;
 	virtual std::ostringstream prints() const;
 
-	Primitive<const char*>(const char*, const Log* = nullptr);
-	Primitive<const char*>& operator =(const char*);
+	Primitive(const char*, const Log* = nullptr);
+	Primitive& operator =(const char*);
 };
 
 template<typename Type> class Class final: public Object {
