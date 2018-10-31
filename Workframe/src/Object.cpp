@@ -39,7 +39,7 @@ const std::string& Object::has_label() const {
 const std::string& Object::has_logger() const {
 	return logger;
 }
-std::string Object::makes_track(const Object* caller) {
+std::string Object::make_track(const Object* caller) {
 	std::string result;
 
 	if (caller)
@@ -50,11 +50,11 @@ std::string Object::makes_track(const Object* caller) {
 
 Object::Object(const Object* caller, std::string label) {
 	this->label = label;
-	logger = makes_track(caller);
+	logger = make_track(caller);
 }
 Object::Object(const Object& copy) {
 	label = copy.label;
-	logger = makes_track(nullptr);
+	logger = make_track(nullptr);
 }
 Object& Object::operator =(const Object& copy) {
 	label = copy.label;
@@ -76,14 +76,67 @@ Void::Void(const Log* caller) :
 		Object(caller, typeid(void).name()) {
 }
 
+//Primitive<const char*>
+Primitive<const char*>::operator const char*() const {
+	return value;
+}
+std::ostringstream Primitive<const char*>::prints() const {
+	std::ostringstream result;
+
+	result << "\"" << value << "\"";
+
+	return result;
+}
+
+Primitive<const char*>::Primitive(const char* value, const Log* caller) :
+		Object(caller, value) {
+	this->value = value;
+}
+Primitive<const char*>& Primitive<const char*>::operator =(const char* value) {
+	this->value = value;
+
+	return *this;
+}
+
+//Class<std::string>
+const std::string& Class<std::string>::is() const {
+	return value;
+}
+std::string& Class<std::string>::is() {
+	return value;
+}
+std::string&& Class<std::string>::becomes() {
+	return std::move(value);
+}
+std::ostringstream Class<std::string>::prints() const {
+	std::ostringstream result;
+
+	result << "\"" << value << "\"";
+
+	return result;
+}
+
+Class<std::string>::Class(std::string value, const Log* caller) :
+		Object(caller, value) {
+	this->value = value;
+}
+Class<std::string>& Class<std::string>::operator =(std::string copy) {
+	value = copy;
+
+	return *this;
+}
+
 //Log
 std::ostringstream Log::log_arguments() {
 	return std::ostringstream();
 }
 void Log::log(std::string logger, std::string message, bool open,
 		const Object* returning) {
-	logger += ": " + (returning ? (open ? "  }=" : message + "=")
-			+ returning->prints().str() : message + (open ? " {" : ""));
+	logger += ": "
+			+ (returning ?
+					(open ? "  }=" : message + "=")
+							+ returning->prints().str() :
+					message + (open ? " {" : ""));
 
 	std::clog << logger << std::endl;
 }
@@ -119,16 +172,16 @@ void Log::notes(std::ostringstream message) const {
 	if (open)
 		std::clog << has_logger() << "  " << message.str() << std::endl;
 }
-Object& Log::returns(Object& returning) const {
-	log_return(const_cast<Log&>(*this), returning);
+	Object& Log::returns(Object& returning) const {
+		log_return(const_cast<Log&>(*this), returning);
 
-	return returning;
-}
-Object&& Log::returns(Object&& returning) const {
-	log_return(const_cast<Log&>(*this), returning);
+		return returning;
+	}
+	Object&& Log::returns(Object&& returning) const {
+		log_return(const_cast<Log&>(*this), returning);
 
-	return std::move(returning);
-}
+		return std::move(returning);
+	}
 void Log::logs_error(std::ostringstream message) const {
 	std::cerr << has_logger() << ": " << has_label() << " " << message.str()
 			<< std::endl;

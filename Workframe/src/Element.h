@@ -19,82 +19,77 @@
 #include <vector>
 
 namespace base {
-template<typename ... Types> class Content_Printer {
-	std::tuple<Types ...> content;
+class Container_Printer {
+	template<typename Content> struct size {
+		static const size_t value = 1;
+	};
+	template<typename ... Types> struct size<std::tuple<Types ...>> {
+		static const size_t value = sizeof...(Types);
+	};
 
-	template<typename Parameter, typename ... Parameters> static std::list<
-			std::string> give(const std::tuple<Types ...>& content) {
-		auto result = give<Parameters ...>(content);
-		std::ostringstream print;
-
-		print
-				<< std::get<sizeof...(Types) - sizeof...(Parameters) - 1>(
-						content);
-		result.emplace_front(print.str());
-
-		return result;
-	}
-public:
-	Content_Printer(const std::tuple<Types ...>& content) {
-		this->content = content;
-	}
-};
-template<typename Container, typename ... Separators> class Container_Printer {
 	std::string text;
 
-	template<typename ... Rest> static std::list<std::string> prepare_separators(
-			std::string separator, Rest&& ... rest) {
-		auto result = prepare_separators(rest ...);
+	std::list<std::string> static prepare_separators() {
+		return std::list<std::string>();
+	}
+	template<typename ... Separators> static std::list<std::string> prepare_separators(
+			std::string separator, Separators&& ... separators) {
+		auto result = prepare_separators(separators ...);
 
 		result.emplace_front(separator);
 
 		return result;
 	}
-	std::list<std::string> static prepare_separators() {
-		return std::list<std::string>();
+	template<typename Content> static std::list<std::string> list_components(
+			const Content& content) {
+		std::ostringstream print;
+
+		print << std::get<0>(content);
+
+		return std::list<std::string> { print.str() };
+	}
+	template<typename Content, typename Parameter, typename ... Parameters> static std::list<
+			std::string> list_components(const Content& content) {
+		auto result = list_components<Content, Parameters ...>(content);
+		std::ostringstream print;
+
+		print << std::get<sizeof...(Parameters)>(content);
+		result.emplace_back(print.str());
+
+		return result;
 	}
 	template<typename ... Types> static std::list<std::string> print_content(
 			const std::tuple<Types ...>& content) {
-		return Content_Printer<Types ...>::give(content);
+		return list_components<std::tuple<Types...>, Types ...>(content);
 	}
 	template<typename First, typename Second> static std::list<std::string> print_content(
 			const std::pair<First, Second>& content) {
 		std::tuple<First, Second> result = content;
 
-		return print_content(result);
+		return list_components(result);
+	}
+	template<typename Type> static std::list<std::string> print_content(
+			const Type& content) {
+		std::tuple<Type> result = std::make_tuple(content);
+
+		return list_components(result);
 	}
 public:
 	std::ostringstream operator ()() const {
 		return std::ostringstream(text);
 	}
-	static std::ostringstream give_simple_container(const Container& container,
-			std::string former_separator, std::string last_separator) {
-		std::ostringstream result("{");
 
-		for (auto content : container)
-			result << "\n" << former_separator << content << last_separator;
-		result << (result.str() == "{" ? " " : "\n") << "}";
-
-		return result;
-	}
-	static std::ostringstream print_simple_content(const Container& container) {
-		return give_simple_container(container, "\t", "");
-	}
-	template<typename First, typename Second> static std::ostringstream map_print(
-			const std::map<First, Second>& container) {
-		return Container_Printer<std::map<First, Second>, std::string,
-				std::string>(container, "\t", ": ")();
-	}
-
-	Container_Printer(const Container& container, Separators&& ... separators) {
+	template<typename Container, typename ... Separators> Container_Printer(
+			const Container& container, Separators&& ... separators) {
 		auto separator_list = prepare_separators(separators ...);
 		auto separator_size = separator_list.size();
-		auto content_size =
-				std::tuple_size<typename Container::value_type>::value;
+		auto content_size = size<typename Container::value_type>::value;
 
+		if (separator_size == 0)
+			separator_list.emplace_front("{ ");
 		if (separator_size < content_size + 1) {
-			separator_list.resize(content_size, "\t");
-			separator_list.back() = separator_list.front() == "{" ? "}" : "";
+			separator_list.resize(content_size, "; ");
+			separator_list.back() = separator_list.front() == "{ " ? " }" : "";
 		} else if (separator_size > content_size + 1) {
 			auto back = separator_list.back();
 
@@ -158,38 +153,17 @@ template<> class Class<std::unique_ptr<Element>> final: Object {
 			Object(caller, typeid(Type).name()), value(object) {
 	}
 public:
-	virtual std::ostringstream prints() const {
-		std::ostringstream result;
-
-		result << value.get();
-
-		return result;
-	}
-	const Element& operator *() const {
-		return *value;
-	}
-	Element& operator *() {
-		return *value;
-	}
-	const Element* operator ->() const {
-		return value.operator ->();
-	}
-	Element* operator ->() {
-		return value.operator ->();
-	}
-	operator const Element*() const {
-		return value.get();
-	}
+	virtual std::ostringstream prints() const;
+	const Element& operator *() const;
+	Element& operator *();
+	const Element* operator ->() const;
+	Element* operator ->();
+	operator const Element*() const;
 
 	Class(const Class<std::unique_ptr<Element>>&) = delete;
 	Class& operator =(const Class<std::unique_ptr<Element>>&) = delete;
 	Class<std::unique_ptr<Element>>& operator =(
-			Class<std::unique_ptr<Element>> && assigning) {
-		Object::operator =(assigning);
-		value.reset(assigning.value.release());
-
-		return *this;
-	}
+			Class<std::unique_ptr<Element>> &&);
 	template<typename Type, typename ... Arguments> Class<
 			std::unique_ptr<Element>> construct(const Log* caller = nullptr,
 			Arguments&& ... arguments) {
@@ -214,8 +188,8 @@ struct Ensemble: public Element {
 			nullptr);
 	void takes(Ensemble*, Class<std::string>, Primitive<size_t>, const Log* =
 			nullptr);
-	Primitive<size_t> size(const Log* = nullptr) const;
-	void clear();
+	Primitive<size_t> has_size(const Log* = nullptr) const;
+	void self_clears();
 	template<typename Type, typename ... Arguments> void generates(
 			Class<std::string> name, Primitive<size_t> position = 0,
 			const Log* caller = nullptr, Arguments&& ... arguments) {
@@ -226,21 +200,22 @@ struct Ensemble: public Element {
 				Class<std::unique_ptr<Element>>::construct(caller,
 						arguments ...), position, caller);
 	}
-	static Primitive<size_t> which_is(const Element&, const Log* = nullptr);
-	static Class<std::string> who_is(const Element&, const Log* = nullptr);
-	static Primitive<Ensemble*> where_is(const Element&, const Log* = nullptr);
+	static Primitive<size_t> which_be(const Element&, const Log* = nullptr);
+	static Class<std::string> who_be(const Element&, const Log* = nullptr);
+	static Primitive<Ensemble*> where_be(const Element&, const Log* = nullptr);
 	static Class<std::unique_ptr<Element>> pop(const Element&, const Log* =
 			nullptr);
 	static void take(Ensemble*, Primitive<size_t>, const Element&, const Log* =
 			nullptr);
 	static Class<std::tuple<Ensemble*, Primitive<size_t>, std::string>> localize(
 			const Element&, const Log* = nullptr);
-	static Class<std::vector<std::string>> has_path(const Element&);
+	static Class<std::vector<std::string>> have_path(const Element&);
 private:
 	Container container;
 
-	Class<Container::iterator> finds(Primitive<size_t>) const;
-	Class<Container::iterator> finds(Class<std::string>) const;
+	Class<Container::iterator> localizes(Primitive<size_t>) const;
+	Primitive<size_t> localizes(Class<Container::iterator>) const;
+	Class<std::set<Container::iterator>> finds(Class<std::string>) const;
 	static Class<std::pair<Ensemble*, Container::iterator>> find(
 			const Element*);
 };

@@ -41,7 +41,7 @@ public:
 protected:
 	const std::string& has_label() const;
 	const std::string& has_logger() const;
-	static std::string makes_track(const Object*);
+	static std::string make_track(const Object*);
 
 	Object(const Object*, std::string);
 	virtual ~Object() = default;
@@ -190,26 +190,11 @@ public:
 template<> class Primitive<const char*> final: public Object {
 	const char* value;
 public:
-	operator const char*() const {
-		return value;
-	}
-	virtual std::ostringstream prints() const {
-		std::ostringstream result;
+	operator const char*() const;
+	virtual std::ostringstream prints() const;
 
-		result << "\"" << value << "\"";
-
-		return result;
-	}
-
-	Primitive(const char* value, const Log* caller = nullptr) :
-			Object(caller, value) {
-		this->value = value;
-	}
-	Primitive& operator =(const char* value) {
-		this->value = value;
-
-		return *this;
-	}
+	Primitive<const char*>(const char*, const Log* = nullptr);
+	Primitive<const char*>& operator =(const char*);
 };
 
 template<typename Type> class Class final: public Object {
@@ -223,7 +208,7 @@ public:
 	Type& is() {
 		return value;
 	}
-	Type&& becomes() const {
+	Type&& becomes() {
 		return std::move(value);
 	}
 	virtual std::ostringstream prints() const {
@@ -254,32 +239,13 @@ public:
 template<> class Class<std::string> final: public Object {
 	std::string value;
 public:
-	const std::string& is() const {
-		return value;
-	}
-	std::string& is() {
-		return value;
-	}
-	std::string&& becomes() {
-		return std::move(value);
-	}
-	virtual std::ostringstream prints() const {
-		std::ostringstream result;
+	const std::string& is() const;
+	std::string& is();
+	std::string&& becomes();
+	virtual std::ostringstream prints() const;
 
-		result << "\"" << value << "\"";
-
-		return result;
-	}
-
-	Class(std::string value, const Log* caller = nullptr) :
-			Object(caller, value) {
-		this->value = value;
-	}
-	Class<std::string>& operator =(std::string copy) {
-		value = copy;
-
-		return *this;
-	}
+	Class<std::string>(std::string, const Log* = nullptr);
+	Class<std::string>& operator =(std::string);
 };
 
 template<typename Type> Primitive<Type> unary_primitive(std::string operation,
