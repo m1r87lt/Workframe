@@ -77,7 +77,8 @@ template<> std::function<std::ostringstream(const Element::Modifications&)> Clas
 		Element::Modifications>::printer = print_modifications;
 Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	Modifications result;
-	auto log = as_method(__func__, caller, typeid(Class<decltype(result)> ));
+	using Mods = Class<decltype(result)>;
+	auto log = as_method(__func__, caller, typeid(Mods));
 	auto end = attributes.end();
 	auto last_end = last_attributes.end();
 
@@ -102,8 +103,7 @@ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 					std::make_pair("", attribute.second));
 	}
 
-	return static_cast<Class<Modifications> &&>(log.returns(
-			Class<Modifications>(&log, result)));
+	return static_cast<Mods&&>(log.returns(Mods(&log, result)));
 }
 
 Element::Element(Class<std::string> label, const Log* caller,
@@ -168,21 +168,29 @@ template<> std::function<std::ostringstream(const std::map<size_t, Ensemble*>&)>
 Class<std::map<size_t, Element*>> Ensemble::operator [](
 		Class<std::string> name) const {
 	std::map<size_t, Element*> result;
-	auto log = as_binary("[]", name, nullptr,
-			typeid(Class<decltype(result)> ));
+	using Result = Class<decltype(result)>;
+	auto log = as_binary("[]", name, nullptr, typeid(Result));
+	size_t position = 0;
+	auto current = container.begin();
+	auto size = container.size();
 
-	for (auto found : finds(name).becomes())
-		result[localizes(found)] = found->second.get();
+	while (position < size)
+		if (names(name.is(), current->first))
+			result[++position] = current->second.get();
+		else
+			++position;
 
-	return static_cast<Class<decltype(result)> &&>(log.returns(
-			Class<std::map<size_t, Element*>>(&log, result)));
+	return static_cast<Result&&>(log.returns(Result(result, &log)));
 }
 Primitive<size_t> Ensemble::which_is(Class<std::string> name,
 		const Log* caller) const {
 	size_t result;
 	auto log = as_method(__func__, caller, typeid(decltype(result)), name);
 
-	finds(name);
+	for (auto searched : finds(name, &log).becomes()) {
+		if (searched->first == name)
+			return;
+	}
 }
 /////////////////////////////////
 std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
@@ -223,12 +231,12 @@ static Class<std::vector<std::string>> have_path(const Element&);
 private:
 Container container;
 
+std::string names(std::string);
+bool names(std::string, std::string) const;
 Class<Container::iterator> localizes(Primitive<size_t>,
 		const Log* = nullptr) const;
 Primitive<size_t> localizes(Class<Container::iterator>,
 		const Log* = nullptr) const;
-Class<std::set<Container::iterator>> finds(Class<std::string>, const Log* =
-		nullptr) const;
 static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
 		const Log* = nullptr);
 } /* namespace base */

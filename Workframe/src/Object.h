@@ -181,20 +181,20 @@ public:
 			Object(caller, typeid(Type).name()) {
 		this->value = value;
 	}
-	Primitive& operator =(Type value) {
+	Primitive<Type>& operator =(Type value) {
 		this->value = value;
 
 		return *this;
 	}
 };
-template class Primitive<const char*> final: public Object {
+template<> class Primitive<const char*> final: public Object {
 	const char* value;
 public:
 	operator const char*() const;
 	virtual std::ostringstream prints() const;
 
 	Primitive(const char*, const Log* = nullptr);
-	Primitive& operator =(const char*);
+	Primitive<const char*>& operator =(const char*);
 };
 
 template<typename Type> class Class final: public Object {
@@ -244,7 +244,7 @@ public:
 	std::string&& becomes();
 	virtual std::ostringstream prints() const;
 
-	Class<std::string>(std::string, const Log* = nullptr);
+	Class(std::string, const Log* = nullptr);
 	Class<std::string>& operator =(std::string);
 };
 

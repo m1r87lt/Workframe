@@ -148,8 +148,7 @@ protected:
 template<> class Class<std::unique_ptr<Element>> final: Object {
 	std::unique_ptr<Element> value;
 
-	template<typename Type> Class<std::unique_ptr<Element>>(Type* object,
-			const Log* caller = nullptr) :
+	template<typename Type> Class(Type* object, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()), value(object) {
 	}
 public:
@@ -162,8 +161,7 @@ public:
 
 	Class(const Class<std::unique_ptr<Element>>&) = delete;
 	Class& operator =(const Class<std::unique_ptr<Element>>&) = delete;
-	Class<std::unique_ptr<Element>>& operator =(
-			Class<std::unique_ptr<Element>> &&);
+	Class& operator =(Class<std::unique_ptr<Element>> &&);
 	template<typename Type, typename ... Arguments> Class<
 			std::unique_ptr<Element>> construct(const Log* caller = nullptr,
 			Arguments&& ... arguments) {
@@ -214,12 +212,12 @@ struct Ensemble: public Element {
 private:
 	Container container;
 
+	std::string names(std::string);
+	bool names(std::string, std::string) const;
 	Class<Container::iterator> localizes(Primitive<size_t>,
 			const Log* = nullptr) const;
 	Primitive<size_t> localizes(Class<Container::iterator>,
 			const Log* = nullptr) const;
-	Class<std::set<Container::iterator>> finds(Class<std::string>, const Log* =
-			nullptr) const;
 	static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
 			const Log* = nullptr);
 };
