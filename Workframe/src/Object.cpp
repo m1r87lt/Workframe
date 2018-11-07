@@ -172,16 +172,6 @@ void Log::notes(std::ostringstream message) const {
 	if (open)
 		std::clog << has_logger() << "  " << message.str() << std::endl;
 }
-	Object& Log::returns(Object& returning) const {
-		log_return(const_cast<Log&>(*this), returning);
-
-		return returning;
-	}
-	Object&& Log::returns(Object&& returning) const {
-		log_return(const_cast<Log&>(*this), returning);
-
-		return std::move(returning);
-	}
 void Log::logs_error(std::ostringstream message) const {
 	std::cerr << has_logger() << ": " << has_label() << " " << message.str()
 			<< std::endl;

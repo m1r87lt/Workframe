@@ -216,8 +216,6 @@ private:
 	bool names(std::string, std::string) const;
 	Class<Container::iterator> localizes(Primitive<size_t>,
 			const Log* = nullptr) const;
-	Primitive<size_t> localizes(Class<Container::iterator>,
-			const Log* = nullptr) const;
 	static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
 			const Log* = nullptr);
 };

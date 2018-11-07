@@ -83,8 +83,16 @@ class Log: virtual public Object {
 	static void log_return(Log&, Object&);
 public:
 	void notes(std::ostringstream) const;
-	Object& returns(Object&) const;
-	Object&& returns(Object&&) const;
+	template<typename Type> Type& returns(Type& returning) const {
+		log_return(const_cast<Log&>(*this), returning);
+
+		return returning;
+	}
+	template<typename Type> Type&& returns(Type&& returning) const {
+		log_return(const_cast<Log&>(*this), returning);
+
+		return std::move(returning);
+	}
 	void logs_error(std::ostringstream) const;
 	virtual std::ostringstream prints() const;
 	static Log as_unary(std::string, const Object&, const Log* = nullptr, bool =
