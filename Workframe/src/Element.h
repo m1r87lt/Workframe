@@ -212,10 +212,13 @@ struct Ensemble: public Element {
 private:
 	Container container;
 
-	std::string names(std::string);
-	bool names(std::string, std::string) const;
-	Class<Container::iterator> localizes(Primitive<size_t>,
+	std::string names(std::string, const Log* = nullptr);
+	bool names(std::string, std::string, const Log* = nullptr) const;
+	Class<Container::iterator> localizes(size_t, const Log* = nullptr) const;
+	Class<std::pair<size_t, Container::iterator>> localizes(std::string,
 			const Log* = nullptr) const;
+	Class<std::unique_ptr<Element>> gives(Container::iterator, const Log* =
+			nullptr);
 	static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
 			const Log* = nullptr);
 };

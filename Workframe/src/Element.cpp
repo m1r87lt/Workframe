@@ -183,16 +183,10 @@ Class<std::map<size_t, Element*>> Ensemble::operator [](
 }
 Primitive<size_t> Ensemble::which_is(Class<std::string> name,
 		const Log* caller) const {
-	size_t result = 0;
-	using Result = Primitive<decltype(result)>;
-	auto log = as_method(__func__, caller, typeid(Result), name);
-	auto current = container.begin();
-	auto size = container.size();
+	auto log = as_method(__func__, caller, typeid(Primitive<size_t> ), name);
 
-	while (result < size && !names(name.is(), current++->first))
-		++result;
-
-	return log.returns(Result(result, &log));
+	return log.returns(
+			Primitive<size_t>(localizes(name.is(), &log).becomes().first, &log));
 }
 Class<std::string> Ensemble::who_is(Primitive<size_t> position,
 		const Log* caller) const {
@@ -201,6 +195,22 @@ Class<std::string> Ensemble::who_is(Primitive<size_t> position,
 	auto log = as_method(__func__, caller, typeid(Result), position);
 
 	return log.returns(Result(localizes(position, &log).is()->first, &log));
+}
+Class<std::unique_ptr<Element>> Ensemble::gives(Primitive<size_t> position,
+		const Log* caller) {
+	auto log = as_method(__func__, caller,
+			typeid(Class<std::unique_ptr<Element>> ), position);
+
+	return log.returns(gives(localizes(position, &log).becomes(), &log));
+}
+Class<std::unique_ptr<Element>> Ensemble::gives(Class<std::string> name,
+		const Log* caller) {
+	auto log = as_method(__func__, caller,
+			typeid(Class<std::unique_ptr<Element>> ), position);
+
+	return std::move(
+			log.returns(
+					gives(localizes(name.is(), &log).becomes().second, &log)));
 }
 /////////////////////////////////
 std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
@@ -217,8 +227,6 @@ template<> std::function<
 		std::tuple<Ensemble*, size_t, std::string>>::printer =
 		class_std__tuple_Ensemble__size_t__std__string__;
 /*////////////////////////////////
- Class<std::unique_ptr<Element>> gives(Primitive<size_t>, const Log* = nullptr);
- Class<std::unique_ptr<Element>> gives(Class<std::string>, const Log* = nullptr);
  void gets(Class<std::string>, Class<std::unique_ptr<Element>> &&,
  Primitive<size_t>, const Log* = nullptr);
  void takes(Ensemble*, Primitive<size_t>, Primitive<size_t>,
@@ -240,10 +248,24 @@ template<> std::function<
  private:
  Container container;
 
- std::string names(std::string);
- bool names(std::string, std::string) const;
- Class<Container::iterator> localizes(Primitive<size_t>,
+ std::string names(std::string, const Log* = nullptr);
+ bool names(std::string, std::string, const Log* = nullptr) const;
+ Class<Container::iterator> localizes(size_t,
  const Log* = nullptr) const;
+ Class<std::pair<size_t, Container::iterator>> localizes(std::string name,
+ const Log* = nullptr) const {
+ auto log = as_method(__func__, caller, typeid(Class<std::pair<size_t, Container::iterator>>), Class(name));
+ auto size = container.size();
+ decltype(size) position = 0;
+ auto current = container.begin();
+
+ while (position++ < size && !names(name.is(), current->first))
+ ++current;
+
+ return log.returns(Class(std::make_pair(position < size ? position : 0, current)));
+ }
+ Class<std::unique_ptr<Element>> gives(Container::iterator,
+ const Log* = nullptr);
  static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
  const Log* = nullptr);/**/
 } /* namespace base */
