@@ -172,9 +172,12 @@ void Log::notes(std::ostringstream message) const {
 	if (open)
 		std::clog << has_logger() << "  " << message.str() << std::endl;
 }
-void Log::logs_error(std::ostringstream message) const {
-	std::cerr << has_logger() << ": " << has_label() << " " << message.str()
-			<< std::endl;
+std::string Log::logs_error(std::ostringstream message) const {
+	std::string result = has_logger() + ": " + has_label() + " " + message.str();
+
+	std::cerr << result << std::endl;
+
+	return result;
 }
 std::ostringstream Log::prints() const {
 	std::ostringstream result;

@@ -122,7 +122,11 @@ Element::~Element() {
 		everything.erase(this);
 }
 
-//
+//Class<std::unique_ptr<Element>>
+std::unique_ptr<Element> Class<std::unique_ptr<Element>>::is_from(
+		Class<std::unique_ptr<Element>> && instance) {
+	return std::move(instance.value);
+}
 std::ostringstream Class<std::unique_ptr<Element>>::prints() const {
 	std::ostringstream result;
 
@@ -146,6 +150,10 @@ Class<std::unique_ptr<Element>>::operator const Element*() const {
 	return value.get();
 }
 
+Class<std::unique_ptr<Element>>::Class(
+		Class<std::unique_ptr<Element>> && moving) :
+		Object(moving), value(std::move(moving.value)) {
+}
 Class<std::unique_ptr<Element>>& Class<std::unique_ptr<Element>>::operator =(
 		Class<std::unique_ptr<Element>> && assigning) {
 	Object::operator =(assigning);
@@ -153,13 +161,37 @@ Class<std::unique_ptr<Element>>& Class<std::unique_ptr<Element>>::operator =(
 
 	return *this;
 }
+Class<std::unique_ptr<Element>>::Class(std::unique_ptr<Element>&& instance,
+		const Log* caller) :
+		Object(caller, __func__), value(std::move(instance)) {
+}
 
 //Ensemble
+void throw_out_of_range_0(size_t position, size_t size, const Log* log) {
+	std::ostringstream message;
+
+	message << "ERROR: position{" << position << "}";
+	if (position)
+		message << " > size{" << size << "}";
+	message << ".";
+
+	throw std::out_of_range(log->logs_error(std::move(message)));
+}
+void throw_invalid_argument_null(Object& pointer, const Log* log) {
+	std::ostringstream message;
+
+	message << "ERROR: " << pointer.prints().str() << ".";
+
+	throw std::invalid_argument(log->logs_error(std::move(message)));
+}
 Element& Ensemble::operator [](Primitive<size_t> position) const {
 	auto log = as_binary("[]", position, nullptr, typeid(Element&));
+	auto current = localizes(position, &log);
 
-	return dynamic_cast<Element&>(log.returns(
-			*localizes(position, &log).is()->second));
+	if (current == container.end())
+		throw_out_of_range_0(position, container.size(), &log);
+
+	return log.returns(*current->second);
 }
 
 template<> std::function<std::ostringstream(const std::map<size_t, Ensemble*>&)> Class<
@@ -186,7 +218,7 @@ Primitive<size_t> Ensemble::which_is(Class<std::string> name,
 	auto log = as_method(__func__, caller, typeid(Primitive<size_t> ), name);
 
 	return log.returns(
-			Primitive<size_t>(localizes(name.is(), &log).becomes().first, &log));
+			Primitive<size_t>(localizes(name.is(), &log).first, &log));
 }
 Class<std::string> Ensemble::who_is(Primitive<size_t> position,
 		const Log* caller) const {
@@ -194,30 +226,137 @@ Class<std::string> Ensemble::who_is(Primitive<size_t> position,
 	using Result = Class<decltype(result)>;
 	auto log = as_method(__func__, caller, typeid(Result), position);
 
-	return log.returns(Result(localizes(position, &log).is()->first, &log));
+	return log.returns(Result(localizes(position, &log)->first, &log));
 }
 Class<std::unique_ptr<Element>> Ensemble::gives(Primitive<size_t> position,
 		const Log* caller) {
 	auto log = as_method(__func__, caller,
 			typeid(Class<std::unique_ptr<Element>> ), position);
 
-	return log.returns(gives(localizes(position, &log).becomes(), &log));
+	return log.returns(
+			Class<std::unique_ptr<Element>>(
+					gives(localizes(position, &log), &log), &log));
 }
 Class<std::unique_ptr<Element>> Ensemble::gives(Class<std::string> name,
 		const Log* caller) {
 	auto log = as_method(__func__, caller,
-			typeid(Class<std::unique_ptr<Element>> ), position);
+			typeid(Class<std::unique_ptr<Element>> ), name);
 
-	return std::move(
-			log.returns(
-					gives(localizes(name.is(), &log).becomes().second, &log)));
+	return log.returns(
+			Class<std::unique_ptr<Element>>(
+					gives(localizes(name.is(), &log).second, &log), &log));
 }
-/////////////////////////////////
+void Ensemble::gets(Class<std::string> name,
+		Class<std::unique_ptr<Element>> && instance,
+		Primitive<size_t> position = 0, const Log* caller) {
+	auto log = as_method(__func__, caller, typeid(void), name, instance,
+			position);
+	Element* current = instance;
+	auto iterator = localizes(position, &log);
+
+	if (current) {
+		if (iterator == container.end())
+			throw_out_of_range_0(position, container.size(), &log);
+		container.emplace(iterator, names(name.is(), &log),
+				Class<std::unique_ptr<Element>>::is_from(std::move(instance)));
+		current->position = this;
+		current->is_modified(&log);
+		is_modified(&log);
+	} else
+		throw_invalid_argument_null(instance, &log);
+}
+void Ensemble::takes(Primitive<Ensemble*> ensemble, Primitive<size_t> source,
+		Primitive<size_t> destination = 0, const Log* caller) {
+	auto log = as_method(__func__, caller, typeid(void), ensemble, source,
+			destination);
+	Ensemble* giver = ensemble;
+
+	if (giver) {
+		auto target = giver->localizes(source, &log);
+
+		if (target == giver->container.end())
+			throw_out_of_range_0(source, giver->container.size(), &log);
+		gets(target->first,
+				Class<std::unique_ptr<Element>>(giver->gives(target, &log),
+						&log), destination, &log);
+	} else
+		throw_invalid_argument_null(ensemble, &log);
+}
+void Ensemble::takes(Primitive<Ensemble*> ensemble, Class<std::string> source,
+		Primitive<size_t> destination, const Log* caller) {
+	auto log = as_method(__func__, caller, typeid(void), ensemble, source,
+			destination);
+	Ensemble* giver = ensemble;
+
+	if (giver)
+		gets(source,
+				Class<std::unique_ptr<Element>>(
+						giver->gives(giver->localizes(source.is(), &log).second,
+								&log), &log), destination, &log);
+	else
+		throw_invalid_argument_null(ensemble, &log);
+}
+Primitive<size_t> Ensemble::has_size(const Log* caller) const {
+	return method_primitive(container.size(), *this, __func__, caller);
+}
+void Ensemble::self_clears(const Log* caller) {
+	auto log = as_method(__func__, caller);
+
+	container.clear();
+	is_modified(&log);
+}
+Class<std::unique_ptr<Element>> Ensemble::pop(Element& instance,
+		const Log* caller) {
+	using Result = Class<std::unique_ptr<Element>>;
+	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
+			true, caller, typeid(Result), instance);
+	Ensemble* ensemble = nullptr;
+	auto current = find(instance, &log);
+
+	if (current.first) {
+		if ((ensemble = current.first)) {
+			if (current.second == ensemble->container.end())
+				throw std::domain_error(
+						log.logs_error(
+								std::ostringstream(
+										"ERROR: " + instance.has_label()
+												+ "'s position{"
+												+ ensemble->has_label()
+												+ "} should be set to null.")));
+			else
+				return log.returns(
+						Result(ensemble->gives(current.second, &log), &log));
+		} else
+			throw std::invalid_argument(
+					log.logs_error(
+							std::ostringstream(
+									"ERROR: " + instance.has_label()
+											+ " is a root Element.")));
+	} else {
+		Primitive<Ensemble*> primitive_ensemble(ensemble, &log);
+
+		throw_invalid_argument_null(primitive_ensemble, &log);
+
+		throw std::exception();
+	}
+}
+void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
+		Element& instance, const Log* caller) {
+	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
+			true, caller, typeid(void), ensemble, position, instance);
+	auto current = localize(instance, &log).is();
+
+	if (ensemble)
+		throw_invalid_argument_null(ensemble, &log);
+	((Ensemble*) ensemble)->takes(std::get<0>(current), std::get<1>(current),
+			position, &log);
+}
+
 std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
 		const std::tuple<Ensemble*, size_t, std::string>& position) {
 	std::ostringstream result("{ ");
 
-	result << std::get<0>(position) << "; " << std::get<1>(position) << "; \""
+	result << std::get<0>(position) << ": " << std::get<1>(position) << ", \""
 			<< std::get<2>(position) << "\" }";
 
 	return result;
@@ -226,46 +365,204 @@ template<> std::function<
 		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
 		std::tuple<Ensemble*, size_t, std::string>>::printer =
 		class_std__tuple_Ensemble__size_t__std__string__;
-/*////////////////////////////////
- void gets(Class<std::string>, Class<std::unique_ptr<Element>> &&,
- Primitive<size_t>, const Log* = nullptr);
- void takes(Ensemble*, Primitive<size_t>, Primitive<size_t>,
- const Log* = nullptr);
- void takes(Ensemble*, Class<std::string>, Primitive<size_t>, const Log* =
- nullptr);
- Primitive<size_t> has_size(const Log* = nullptr) const;
- void self_clears();
- static Primitive<size_t> which_be(const Element&, const Log* = nullptr);
- static Class<std::string> who_be(const Element&, const Log* = nullptr);
- static Primitive<Ensemble*> where_be(const Element&, const Log* = nullptr);
- static Class<std::unique_ptr<Element>> pop(const Element&,
- const Log* = nullptr);
- static void take(Ensemble*, Primitive<size_t>, const Element&, const Log* =
- nullptr);
- static Class<std::tuple<Ensemble*, Primitive<size_t>, std::string>> localize(
- const Element&, const Log* = nullptr);
- static Class<std::vector<std::string>> have_path(const Element&);
- private:
- Container container;
+Class<std::tuple<Ensemble*, size_t, std::string>> Ensemble::localize(
+		const Element& instance, const Log* caller) {
+	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
+			true, caller,
+			typeid(Class<std::tuple<Ensemble*, size_t, std::string>> ),
+			instance);
+	auto ensemble = dynamic_cast<Ensemble*>(instance.position);
+	std::string name;
+	size_t position = 0;
 
- std::string names(std::string, const Log* = nullptr);
- bool names(std::string, std::string, const Log* = nullptr) const;
- Class<Container::iterator> localizes(size_t,
- const Log* = nullptr) const;
- Class<std::pair<size_t, Container::iterator>> localizes(std::string name,
- const Log* = nullptr) const {
- auto log = as_method(__func__, caller, typeid(Class<std::pair<size_t, Container::iterator>>), Class(name));
- auto size = container.size();
- decltype(size) position = 0;
- auto current = container.begin();
+	if (ensemble) {
+		auto current = ensemble->container.begin();
+		auto size = ensemble->container.size();
 
- while (position++ < size && !names(name.is(), current->first))
- ++current;
+		while (position++ < size && current->second.get() != &instance)
+			++current;
+		if (position > size)
+			position = 0;
+		else if (position)
+			name = current->first;
+	}
 
- return log.returns(Class(std::make_pair(position < size ? position : 0, current)));
- }
- Class<std::unique_ptr<Element>> gives(Container::iterator,
- const Log* = nullptr);
- static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
- const Log* = nullptr);/**/
+	return log.returns(
+			Class<std::tuple<Ensemble*, size_t, std::string>>(
+					std::make_tuple(ensemble, position, name), &log));
+}
+std::ostringstream class_std__vector_std__string__(
+		const std::vector<std::string> sequence) {
+	return Container_Printer(sequence, "\t")();
+}
+template<> std::function<std::ostringstream(const std::vector<std::string>&)> Class<
+		std::vector<std::string>>::printer = class_std__vector_std__string__;
+Class<std::vector<std::string>> Ensemble::have_path(const Element& instance,
+		const Log* caller) {
+	std::vector<std::string> result;
+	using Result = Class<decltype(result)>;
+	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
+			true, caller, typeid(Result), instance);
+	auto current = localize(instance, &log).is();
+
+	if (std::get<0>(current)) {
+		result = have_path(*std::get<0>(current), &log).becomes();
+		result.emplace_back(std::get<2>(current));
+	}
+
+	return log.returns(Result(result, &log));
+}
+std::string Ensemble::names(std::string name, const Log* caller) const {
+	Class<std::string> candidate(name, caller);
+	auto log = as_method(__func__, caller, typeid(std::string), candidate);
+	std::set<std::string> found;
+	auto current = container.begin();
+
+	for (auto end = container.end(); current != end; ++current)
+		if (names(name, current->first))
+			found.emplace(current->first);
+	if (found.size()) {
+		if (found.size() > 1)
+			candidate.is() += std::to_string(
+					std::stoull((--found.end())->substr(name.length() + 1))
+							+ 1);
+		else
+			candidate.is() += "_0";
+	}
+
+	return log.returns(candidate).becomes();
+}
+bool Ensemble::names(std::string name, std::string candidate,
+		const Log* caller) const {
+	Class<std::string> evaluated(candidate, caller);
+	decltype(evaluated) base(name, caller);
+	auto log = as_method(__func__, caller, typeid(bool), base, evaluated);
+	auto length = name.length();
+
+	if (length) {
+		if (length < candidate.length())
+			try {
+				std::stoull(candidate.substr(length + 1));
+			} catch (std::invalid_argument& exception) {
+				candidate = "";
+			}
+
+		return log.returns(
+				Primitive<bool>(candidate.substr(0, length + 1) == name + "_",
+						&log));
+	} else
+		throw std::invalid_argument(
+				log.logs_error(
+						std::ostringstream(
+								"ERROR: " + evaluated.prints().str() + ".")));
+}
+std::ostringstream class_Container__iterator_(
+		const Ensemble::Container::iterator& position) {
+	std::ostringstream result("{ ");
+
+	result << &position << " }";
+
+	return result;
+}
+template<> std::function<
+		std::ostringstream(const Ensemble::Container::iterator&)> Class<
+		Ensemble::Container::iterator>::printer = class_Container__iterator_;
+Ensemble::Container::iterator Ensemble::localizes(size_t position,
+		const Log* caller) const {
+	auto result = const_cast<Container&>(container).begin();
+	Primitive<decltype(position)> counter(position, caller);
+	auto log = as_method(__func__, caller, typeid(decltype(result)), counter);
+
+	if (position <= container.size() && position)
+		while (--position)
+			++result;
+	else
+		result = const_cast<Container&>(container).end();
+
+	return log.returns(Class<decltype(result)>(result, &log)).becomes();
+}
+std::ostringstream class_std__pair_size_t_Container__iterator__(
+		const std::pair<size_t, Ensemble::Container::iterator>& position) {
+	std::ostringstream result("{ ");
+
+	result << position.first << "; " << &position.second << " }";
+
+	return result;
+}
+template<> std::function<
+		std::ostringstream(
+				const std::pair<size_t, Ensemble::Container::iterator>&)> Class<
+		std::pair<size_t, Ensemble::Container::iterator>>::printer =
+		class_std__pair_size_t_Container__iterator__;
+std::pair<size_t, Ensemble::Container::iterator> Ensemble::localizes(
+		std::string name, const Log* caller) const {
+	Class<std::string> candidate(name, caller);
+	auto log = as_method(__func__, caller,
+			typeid(std::pair<size_t, Container::iterator>), candidate);
+	auto size = const_cast<Container&>(container).size();
+	decltype(size) result = 0;
+	auto current = const_cast<Container&>(container).begin();
+
+	while (result++ < size && !names(name, current->first))
+		++current;
+
+	return log.returns(
+			Class<std::pair<size_t, Container::iterator>>(
+					std::make_pair(result < size ? result : 0, current), &log)).becomes();
+}
+std::unique_ptr<Element> Ensemble::gives(Container::iterator position,
+		const Log* caller) {
+	Class<Container::iterator> iterator(position, caller);
+	using Result = std::unique_ptr<Element>;
+	auto log = as_method(__func__, caller, typeid(Result), iterator);
+	Result result;
+
+	if (position == container.end())
+		throw std::invalid_argument(
+				log.logs_error(
+						std::ostringstream(
+								"ERROR: invalid position{end of container}.")));
+	result.swap(position->second);
+	result->position = nullptr;
+	result->is_modified(&log);
+	container.erase(position);
+	is_modified(&log);
+
+	return Class<Result>::is_from(
+			log.returns(Class<Result>(std::move(result), &log)));
+}
+std::ostringstream class_std__pair_Ensemble__Container__iterator__(
+		const std::pair<Ensemble*, Ensemble::Container::iterator>& position) {
+	std::ostringstream result("{ ");
+
+	result << position.first << "; " << &position.second << " }";
+
+	return result;
+}
+template<> std::function<
+		std::ostringstream(
+				const std::pair<Ensemble*, Ensemble::Container::iterator>&)> Class<
+		std::pair<Ensemble*, Ensemble::Container::iterator>>::printer =
+		class_std__pair_Ensemble__Container__iterator__;
+std::pair<Ensemble*, Ensemble::Container::iterator> Ensemble::find(
+		Element& instance, const Log* caller) {
+	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
+			true, caller, typeid(std::pair<Ensemble*, Container::iterator>),
+			instance);
+	Container::iterator current;
+	auto ensemble = dynamic_cast<Ensemble*>(instance.position);
+
+	if (ensemble) {
+		auto end = ensemble->container.end();
+
+		current = ensemble->container.begin();
+		while (current != end && current->second.get() != &instance)
+			++current;
+	}
+
+	return log.returns(
+			Class<std::pair<Ensemble*, Container::iterator>>(
+					std::make_pair(ensemble, current), &log)).becomes();
+}
+
 } /* namespace base */

@@ -145,8 +145,11 @@ protected:
 					std::map<std::string, std::string>>(nullptr));
 };
 
-template<> class Class<std::unique_ptr<Element>> final: Object {
+template<> class Class<std::unique_ptr<Element>> final: public Object {
 	std::unique_ptr<Element> value;
+
+	friend class Ensemble;
+	static std::unique_ptr<Element> is_from(Class<std::unique_ptr<Element>> &&);
 
 	template<typename Type> Class(Type* object, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()), value(object) {
@@ -158,10 +161,13 @@ public:
 	const Element* operator ->() const;
 	Element* operator ->();
 	operator const Element*() const;
+	operator Element*();
 
 	Class(const Class<std::unique_ptr<Element>>&) = delete;
 	Class& operator =(const Class<std::unique_ptr<Element>>&) = delete;
+	Class(Class<std::unique_ptr<Element>> &&);
 	Class& operator =(Class<std::unique_ptr<Element>> &&);
+	Class(std::unique_ptr<Element>&&, const Log* = nullptr);
 	template<typename Type, typename ... Arguments> Class<
 			std::unique_ptr<Element>> construct(const Log* caller = nullptr,
 			Arguments&& ... arguments) {
@@ -182,10 +188,10 @@ struct Ensemble: public Element {
 			nullptr);
 	void gets(Class<std::string>, Class<std::unique_ptr<Element>> &&,
 			Primitive<size_t>, const Log* = nullptr);
-	void takes(Ensemble*, Primitive<size_t>, Primitive<size_t>, const Log* =
-			nullptr);
-	void takes(Ensemble*, Class<std::string>, Primitive<size_t>, const Log* =
-			nullptr);
+	void takes(Primitive<Ensemble*>, Primitive<size_t>, Primitive<size_t>,
+			const Log* = nullptr);
+	void takes(Primitive<Ensemble*>, Class<std::string>, Primitive<size_t>,
+			const Log* = nullptr);
 	Primitive<size_t> has_size(const Log* = nullptr) const;
 	void self_clears(const Log* = nullptr);
 	template<typename Type, typename ... Arguments> void generates(
@@ -198,29 +204,24 @@ struct Ensemble: public Element {
 				Class<std::unique_ptr<Element>>::construct(caller,
 						arguments ...), position, caller);
 	}
-	static Primitive<size_t> which_be(const Element&, const Log* = nullptr);
-	static Class<std::string> who_be(const Element&, const Log* = nullptr);
-	static Primitive<Ensemble*> where_be(const Element&, const Log* = nullptr);
-	static Class<std::unique_ptr<Element>> pop(const Element&, const Log* =
-			nullptr);
-	static void take(Ensemble*, Primitive<size_t>, const Element&, const Log* =
-			nullptr);
-	static Class<std::tuple<Ensemble*, Primitive<size_t>, std::string>> localize(
+	static Class<std::unique_ptr<Element>> pop(Element&, const Log* = nullptr);
+	static void take(Primitive<Ensemble*>, Primitive<size_t>, Element&,
+			const Log* = nullptr);
+	static Class<std::tuple<Ensemble*, size_t, std::string>> localize(
 			const Element&, const Log* = nullptr);
 	static Class<std::vector<std::string>> have_path(const Element&,
 			const Log* = nullptr);
 private:
 	Container container;
 
-	std::string names(std::string, const Log* = nullptr);
+	std::string names(std::string, const Log* = nullptr) const;
 	bool names(std::string, std::string, const Log* = nullptr) const;
-	Class<Container::iterator> localizes(size_t, const Log* = nullptr) const;
-	Class<std::pair<size_t, Container::iterator>> localizes(std::string,
-			const Log* = nullptr) const;
-	Class<std::unique_ptr<Element>> gives(Container::iterator, const Log* =
+	Container::iterator localizes(size_t, const Log* = nullptr) const;
+	std::pair<size_t, Container::iterator> localizes(std::string, const Log* =
+			nullptr) const;
+	std::unique_ptr<Element> gives(Container::iterator, const Log* = nullptr);
+	static std::pair<Ensemble*, Container::iterator> find(Element&, const Log* =
 			nullptr);
-	static Class<std::pair<Ensemble*, Container::iterator>> find(const Element*,
-			const Log* = nullptr);
 };
 
 } /* namespace base */
