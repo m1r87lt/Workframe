@@ -19,12 +19,10 @@ namespace base {
 bool is_running();
 void ends_run();
 std::string give_substring_after(std::string, std::string, bool, size_t = 1);
-template<typename ... Arguments> std::string make_scopes(std::string label) {
-	return label;
-}
+std::string make_scopes(std::string);
 template<typename ... Arguments> std::string make_scopes(std::string label,
 		std::string ns, Arguments&& ... arguments) {
-	auto recursive = make_scopes(arguments ...);
+	auto recursive = make_scopes(label, arguments ...);
 
 	if (ns.empty())
 		recursive = ns + "::" + recursive;
@@ -96,9 +94,9 @@ public:
 			true, std::type_index = typeid(void));
 	static Log as_binary(const Object&, std::string, const Object&, const Log* =
 			nullptr, bool = true, std::type_index = typeid(void));
-	template<typename ... Arguments> static Log as_method(std::string label,
-			bool open, const Log* caller = nullptr, std::type_index type =
-					typeid(void), Arguments& ... arguments) {
+	template<typename ... Arguments> static Log as_function(std::string label,
+			bool open = true, const Log* caller = nullptr,
+			std::type_index type = typeid(void), Arguments& ... arguments) {
 		Log result(caller, label, open);
 
 		log_method(result, type, nullptr, arguments ...);
@@ -125,6 +123,15 @@ protected:
 			const Object& righthand, const Log* caller = nullptr,
 			std::type_index type = typeid(void)) const {
 		return as_binary(*this, operation, righthand, caller, Open, type);
+	}
+	template<typename ... Arguments> static Log as_method(std::string label,
+			bool open, const Log* caller = nullptr, std::type_index type =
+					typeid(void), Arguments& ... arguments) {
+		Log result(caller, label, open);
+
+		log_method(result, type, nullptr, arguments ...);
+
+		return result;
 	}
 	template<bool Open = true, typename ... Arguments> Log as_method(
 			std::string label, const Log* caller = nullptr,
@@ -158,12 +165,6 @@ protected:
 	}
 
 	Log(const Log*, std::string, bool);
-};
-
-struct Void final: Object {
-	virtual std::ostringstream prints() const;
-
-	Void(const Log*);
 };
 
 template<typename Type> class Primitive final: public Object {
@@ -220,7 +221,8 @@ public:
 
 	template<typename ... Arguments> Class(const Log* caller,
 			Arguments&& ... arguments) :
-			Object(caller, typeid(Type).name()), value(arguments ...) {
+			Object(caller, typeid(Type).name()), value(
+					std::forward<Arguments&&>(arguments) ...) {
 	}
 	Class(Type& copy, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()), value(copy) {
@@ -306,7 +308,7 @@ template<typename Type, typename ... Arguments> Primitive<Type> method_primitive
 template<typename Type, typename ... Arguments> Primitive<Type> method_primitive(
 		Type returning, const Object& object, std::string label,
 		const Log* caller = nullptr, Arguments& ... arguments) {
-	auto log = Log::as_method(object.prints().str() + "." + label, false,
+	auto log = Log::as_function(object.prints().str() + "." + label, false,
 			caller, typeid(returning), arguments ...);
 
 	return log.returns(Primitive<Type>(returning, &log));
@@ -314,7 +316,7 @@ template<typename Type, typename ... Arguments> Primitive<Type> method_primitive
 template<typename Type, typename ... Arguments> Class<Type> method_class(
 		Type&& returning, std::string label, const Log* caller = nullptr,
 		Arguments& ... arguments) {
-	auto log = Log::as_method(label, false, caller, typeid(returning),
+	auto log = Log::as_function(label, false, caller, typeid(returning),
 			arguments ...);
 
 	return log.returns(Class<Type>(returning, &log));
@@ -322,7 +324,7 @@ template<typename Type, typename ... Arguments> Class<Type> method_class(
 template<typename Type, typename ... Arguments> Class<Type> method_class(
 		Type&& returning, const Object& object, std::string label,
 		const Log* caller = nullptr, Arguments& ... arguments) {
-	auto log = Log::as_method(object.prints().str() + "." + label, false,
+	auto log = Log::as_function(object.prints().str() + "." + label, false,
 			caller, typeid(returning), arguments ...);
 
 	return (Class<Type> &&) log.returns(Class<Type>(returning, &log));

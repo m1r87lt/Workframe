@@ -115,7 +115,11 @@ public:
 	Container_Printer(Container_Printer&&) = delete;
 	Container_Printer& operator =(Container_Printer&&) = delete;
 };
-
+template<typename First, typename Second> std::ostringstream print_std__map(
+		const std::map<First, Second>& container) {
+	return Container_Printer(container, "\t", ": ", "")();
+}
+using Fields = Class<std::map<std::string, std::string>>;
 class Element: virtual public Log {
 	std::chrono::system_clock::time_point creation;
 	std::chrono::system_clock::time_point modification;
@@ -134,22 +138,22 @@ public:
 	void is_modified(const Log* = nullptr);
 	Class<const std::map<std::string, std::string>> gives_attributes(
 			const Log* = nullptr) const;
-	void gets_attributes(Class<std::map<std::string, std::string>>, const Log* =
-			nullptr);
+	void gets_attributes(Fields, const Log* = nullptr);
 	Class<Modifications> gives_modifications(const Log* = nullptr);
+	static Class<std::set<Element*>> give_everything(const Log* = nullptr);
 
 	virtual ~Element();
 protected:
-	Element(Class<std::string>, const Log* = nullptr,
-			Class<std::map<std::string, std::string>> = Class<
-					std::map<std::string, std::string>>(nullptr));
+	Element(Class<std::string>, const Log* = nullptr, Fields = nullptr);
+	Element(Element&&);
+	Element& operator =(Element&&) = delete;
 };
-
+using Unique_ptr = Class<std::unique_ptr<Element>>;
 template<> class Class<std::unique_ptr<Element>> final: public Object {
 	std::unique_ptr<Element> value;
 
 	friend class Ensemble;
-	static std::unique_ptr<Element> is_from(Class<std::unique_ptr<Element>> &&);
+	static std::unique_ptr<Element> is_from(Unique_ptr&&);
 
 	template<typename Type> Class(Type* object, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()), value(object) {
@@ -163,17 +167,18 @@ public:
 	operator const Element*() const;
 	operator Element*();
 
-	Class(const Class<std::unique_ptr<Element>>&) = delete;
-	Class& operator =(const Class<std::unique_ptr<Element>>&) = delete;
-	Class(Class<std::unique_ptr<Element>> &&);
-	Class& operator =(Class<std::unique_ptr<Element>> &&);
+	Class(const Unique_ptr&) = delete;
+	Unique_ptr& operator =(const Unique_ptr&) = delete;
+	Class(Unique_ptr&&);
+	Unique_ptr& operator =(Unique_ptr&&);
 	Class(std::unique_ptr<Element>&&, const Log* = nullptr);
-	template<typename Type, typename ... Arguments> Class<
-			std::unique_ptr<Element>> construct(const Log* caller = nullptr,
-			Arguments&& ... arguments) {
-		return Class<std::unique_ptr<Element>>(new Type(arguments ...), caller);
+	template<typename Type, typename ... Arguments> static Unique_ptr construct(
+			const Log* caller = nullptr, Arguments&& ... arguments) {
+		return Unique_ptr(new Type(std::forward<Arguments&&>(arguments) ...),
+				caller);
 	}
 };
+std::domain_error throw_root_element(const Element&, const Log&);
 struct Ensemble: public Element {
 	using Content = std::pair<std::string, std::unique_ptr<Element>>;
 	using Container = std::list<Content>;
@@ -182,12 +187,10 @@ struct Ensemble: public Element {
 	Class<std::map<size_t, Element*>> operator [](Class<std::string>) const;
 	Primitive<size_t> which_is(Class<std::string>, const Log* = nullptr) const;
 	Class<std::string> who_is(Primitive<size_t>, const Log* = nullptr) const;
-	Class<std::unique_ptr<Element>> gives(Primitive<size_t>, const Log* =
+	Unique_ptr gives(Primitive<size_t>, const Log* = nullptr);
+	Unique_ptr gives(Class<std::string>, const Log* = nullptr);
+	void gets(Class<std::string>, Unique_ptr&&, Primitive<size_t>, const Log* =
 			nullptr);
-	Class<std::unique_ptr<Element>> gives(Class<std::string>, const Log* =
-			nullptr);
-	void gets(Class<std::string>, Class<std::unique_ptr<Element>> &&,
-			Primitive<size_t>, const Log* = nullptr);
 	void takes(Primitive<Ensemble*>, Primitive<size_t>, Primitive<size_t>,
 			const Log* = nullptr);
 	void takes(Primitive<Ensemble*>, Class<std::string>, Primitive<size_t>,
@@ -201,16 +204,20 @@ struct Ensemble: public Element {
 				arguments ...);
 
 		gets(name,
-				Class<std::unique_ptr<Element>>::construct(caller,
-						arguments ...), position, caller);
+				Unique_ptr::construct<Type>(caller,
+						std::forward<Arguments&&>(arguments) ...), position,
+				caller);
 	}
-	static Class<std::unique_ptr<Element>> pop(Element&, const Log* = nullptr);
+	static Unique_ptr pop(Element&, const Log* = nullptr);
 	static void take(Primitive<Ensemble*>, Primitive<size_t>, Element&,
 			const Log* = nullptr);
 	static Class<std::tuple<Ensemble*, size_t, std::string>> localize(
 			const Element&, const Log* = nullptr);
 	static Class<std::vector<std::string>> have_path(const Element&,
 			const Log* = nullptr);
+
+	virtual ~Ensemble();
+	Ensemble(Ensemble&&) = delete;
 private:
 	Container container;
 
@@ -222,6 +229,9 @@ private:
 	std::unique_ptr<Element> gives(Container::iterator, const Log* = nullptr);
 	static std::pair<Ensemble*, Container::iterator> find(Element&, const Log* =
 			nullptr);
+protected:
+	Ensemble(Class<std::string>, const Log* = nullptr, Fields = nullptr);
+	friend Unique_ptr;
 };
 
 } /* namespace base */

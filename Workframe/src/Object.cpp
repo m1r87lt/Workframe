@@ -29,6 +29,9 @@ std::string give_substring_after(std::string string, const std::string match,
 	else
 		return result;
 }
+std::string make_scopes(std::string label) {
+	return label;
+}
 
 //Object
 long long unsigned Object::tracker = 0;
@@ -65,15 +68,6 @@ Object& Object::operator =(const Object& copy) {
 Object::Object(Object&& moving) {
 	label = moving.label;
 	logger = moving.logger;
-}
-
-//Void
-std::ostringstream Void::prints() const {
-	return std::ostringstream();
-}
-
-Void::Void(const Log* caller) :
-		Object(caller, typeid(void).name()) {
 }
 
 //Primitive<const char*>
