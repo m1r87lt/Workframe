@@ -6,6 +6,7 @@
  */
 
 #include "Object.h"
+#include <iostream>
 
 namespace base {
 
@@ -70,67 +71,17 @@ Object::Object(Object&& moving) {
 	logger = moving.logger;
 }
 
-//Primitive<const char*>
-Primitive<const char*>::operator const char*() const {
-	return value;
-}
-std::ostringstream Primitive<const char*>::prints() const {
-	std::ostringstream result;
-
-	result << "\"" << value << "\"";
-
-	return result;
-}
-
-Primitive<const char*>::Primitive(const char* value, const Log* caller) :
-		Object(caller, value) {
-	this->value = value;
-}
-Primitive<const char*>& Primitive<const char*>::operator =(const char* value) {
-	this->value = value;
-
-	return *this;
-}
-
-//Class<std::string>
-const std::string& Class<std::string>::is() const {
-	return value;
-}
-std::string& Class<std::string>::is() {
-	return value;
-}
-std::string&& Class<std::string>::becomes() {
-	return std::move(value);
-}
-std::ostringstream Class<std::string>::prints() const {
-	std::ostringstream result;
-
-	result << "\"" << value << "\"";
-
-	return result;
-}
-
-Class<std::string>::Class(std::string value, const Log* caller) :
-		Object(caller, value) {
-	this->value = value;
-}
-Class<std::string>& Class<std::string>::operator =(std::string copy) {
-	value = copy;
-
-	return *this;
-}
-
 //Log
 std::ostringstream Log::log_arguments() {
 	return std::ostringstream();
 }
-void Log::log(std::string logger, std::string message, bool open,
+void Log::log(std::string logger, std::string function, bool open,
 		const Object* returning) {
 	logger += ": "
 			+ (returning ?
-					(open ? "  }=" : message + "=")
+					(open ? "  }=" : function + "=")
 							+ returning->prints().str() :
-					message + (open ? " {" : ""));
+					function + (open ? " {" : ""));
 
 	std::clog << logger << std::endl;
 }
@@ -167,7 +118,8 @@ void Log::notes(std::ostringstream message) const {
 		std::clog << has_logger() << "  " << message.str() << std::endl;
 }
 std::string Log::logs_error(std::ostringstream message) const {
-	std::string result = has_logger() + ": " + has_label() + " " + message.str();
+	std::string result = has_logger() + ": " + has_label() + " "
+			+ message.str();
 
 	std::cerr << result << std::endl;
 
@@ -226,6 +178,68 @@ Log& Log::operator =(Log&& moving) {
 	track = moving.track;
 	open = moving.open;
 	moving.open = false;
+
+	return *this;
+}
+
+//Primitive<const char*>
+Primitive<const char*>::operator const char*() const {
+	return value;
+}
+std::ostringstream Primitive<const char*>::prints() const {
+	std::ostringstream result;
+
+	result << "\"" << value << "\"";
+
+	return result;
+}
+
+Primitive<const char*>::Primitive(const char* value, const Log* caller) :
+		Object(caller, value) {
+	this->value = value;
+}
+Primitive<const char*>& Primitive<const char*>::operator =(
+		Primitive<const char*> && moving) {
+	value = moving.value;
+
+	return *this;
+}
+Primitive<const char*>& Primitive<const char*>::operator =(const char* value) {
+	this->value = value;
+
+	return *this;
+}
+
+//Class<std::string>
+const std::string& Class<std::string>::is() const {
+	return value;
+}
+std::string& Class<std::string>::is() {
+	return value;
+}
+std::string&& Class<std::string>::becomes() {
+	return std::move(value);
+}
+std::ostringstream Class<std::string>::prints() const {
+	std::ostringstream result;
+
+	result << "\"" << value << "\"";
+
+	return result;
+}
+
+Class<std::string>::Class(std::string value, const Log* caller) :
+		Object(caller, value) {
+	this->value = value;
+}
+Class<std::string> Class<std::string>::operator =(
+		Class<std::string> && moving) {
+	value = moving.value;
+
+	return *this;
+}
+Class<std::string>& Class<std::string>::operator =(std::string copy) {
+	value = copy;
 
 	return *this;
 }

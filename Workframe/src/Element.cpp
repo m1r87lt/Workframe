@@ -12,8 +12,7 @@ namespace base {
 //Element
 std::set<Element*> Element::everything;
 
-std::ostringstream print_std__chrono__system_clock__time_point(
-		const std::chrono::system_clock::time_point& object) {
+std::ostringstream print_element__instant_(const Element::Instant& object) {
 	std::ostringstream result;
 	auto tp = std::chrono::system_clock::to_time_t(object);
 
@@ -21,16 +20,12 @@ std::ostringstream print_std__chrono__system_clock__time_point(
 
 	return result;
 }
-template<> std::function<
-		std::ostringstream(const std::chrono::system_clock::time_point&)> Class<
-		const std::chrono::system_clock::time_point>::printer =
-		print_std__chrono__system_clock__time_point;
-Class<const std::chrono::system_clock::time_point> Element::exists_from(
-		const Log* caller) const {
-	return method_class(
-			std::forward<const std::chrono::system_clock::time_point>(creation),
-			*this, __func__, caller);
+template<> std::function<std::ostringstream(const Element::Instant&)> Class<
+		const Element::Instant>::printer = print_element__instant_;
+Class<const Element::Instant> Element::exists_from(const Log* caller) const {
+	return method_class(creation, *this, __func__, caller);
 }
+
 void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
 	modification = std::chrono::system_clock::now();
@@ -42,10 +37,9 @@ template<> std::function<
 		std::string, std::string>;
 Class<const std::map<std::string, std::string>> Element::gives_attributes(
 		const Log* caller) const {
-	return method_class(
-			std::forward<const std::map<std::string, std::string>>(attributes),
-			*this, __func__, caller);
+	return method_class(move(attributes), *this, __func__, caller);
 }
+
 void Element::gets_attributes(Fields attributes, const Log* caller) {
 	auto log = as_method(__func__, caller, typeid(void), attributes);
 
@@ -53,11 +47,9 @@ void Element::gets_attributes(Fields attributes, const Log* caller) {
 	this->attributes = attributes.is();
 	is_modified(caller);
 }
-std::ostringstream class_std__set_Element___(const std::set<Element*>& set) {
-	return Container_Printer(set, "\t{", "}")();
-}
+
 template<> std::function<std::ostringstream(const std::set<Element*>&)> Class<
-		std::set<Element*>>::printer = class_std__set_Element___;
+		std::set<Element*>>::printer = print_std__set<Element*>;
 Class<std::set<Element*>> Element::give_everything(const Log* caller) {
 	return method_class(std::move(everything),
 			make_scopes(__func__, "base", typeid(Element).name()), caller);
@@ -109,8 +101,8 @@ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 	return log.returns(Mods(&log, result));
 }
 
-Element::Element(Class<std::string> label, const Log* caller, Fields attributes) :
-		Object(caller, label.is()), Log(caller, label.is(), false) {
+Element::Element(std::string label, const Log* caller, Fields attributes) :
+		Object(caller, label), Log(caller, label, false) {
 	as_constructor<false>("base", __func__, caller, attributes);
 	modification = creation = std::chrono::system_clock::now();
 	position = nullptr;
@@ -133,7 +125,7 @@ Element::Element(Element&& moving) :
 
 //Class<std::unique_ptr<Element>>
 std::unique_ptr<Element> Class<std::unique_ptr<Element>>::is_from(
-		Class<std::unique_ptr<Element>> && instance) {
+		Unique_ptr&& instance) {
 	return std::move(instance.value);
 }
 std::ostringstream Class<std::unique_ptr<Element>>::prints() const {
@@ -155,16 +147,16 @@ const Element* Class<std::unique_ptr<Element>>::operator ->() const {
 Element* Class<std::unique_ptr<Element>>::operator ->() {
 	return value.operator ->();
 }
-Class<std::unique_ptr<Element>>::operator const Element*() const {
+const Element* Class<std::unique_ptr<Element>>::get() const {
 	return value.get();
 }
-Class<std::unique_ptr<Element>>::operator Element*() {
+Element* Class<std::unique_ptr<Element>>::get() {
 	return value.get();
 }
 
 Class<std::unique_ptr<Element>>::Class(
 		Class<std::unique_ptr<Element>> && moving) :
-		Object(moving), value(std::move(moving.value)) {
+		Object(std::move(moving)), value(std::move(moving.value)) {
 }
 Class<std::unique_ptr<Element>>& Class<std::unique_ptr<Element>>::operator =(
 		Class<std::unique_ptr<Element>> && assigning) {
@@ -180,7 +172,7 @@ Class<std::unique_ptr<Element>>::Class(std::unique_ptr<Element>&& instance,
 
 //Ensemble
 std::string log_out_of_range_0(Primitive<size_t> position,
-		Primitive<size_t> size, const Log& log, bool warning = true) {
+		Primitive<size_t> size, const Log& log, bool warning) {
 	std::ostringstream message;
 
 	message << (warning ? "WARNING" : "ERROR");
@@ -193,25 +185,24 @@ std::string log_out_of_range_0(Primitive<size_t> position,
 }
 std::out_of_range throw_out_of_range_0(Primitive<size_t> position,
 		Primitive<size_t> size, const Log& log) {
-
 	return std::out_of_range(log_out_of_range_0(position, size, log, false));
 }
-std::invalid_argument throw_invalid_argument_null(Object& pointer,
+std::invalid_argument throw_null_invalid_argument(Object& pointer,
 		const Log& log) {
 	return std::invalid_argument(
 			log.logs_error(
 					std::ostringstream(
 							"ERROR: " + pointer.prints().str() + ".")));
 }
-std::string log_root_element(const Element& instance, const Log& log,
-		bool warning = true) {
+std::string log_not_root(const Element& instance, const Log& log,
+		bool warning) {
 	return log.logs_error(
 			std::ostringstream(
 					std::string(warning ? "WARNING" : "ERROR") + ": "
 							+ instance.prints().str() + " is a root Element."));
 }
-std::domain_error throw_root_element(const Element& instance, const Log& log) {
-	return std::domain_error(log_root_element(instance, log, false));
+std::domain_error throw_not_root(const Element& instance, const Log& log) {
+	return std::domain_error(log_not_root(instance, log, false));
 }
 
 Element& Ensemble::operator [](Primitive<size_t> position) const {
@@ -367,19 +358,16 @@ void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
 			position, &log);
 }
 
-std::ostringstream class_std__tuple_Ensemble__size_t__std__string__(
+std::ostringstream print_std__tuple_Ensemble__size_t__std__string__(
 		const std::tuple<Ensemble*, size_t, std::string>& position) {
-	std::ostringstream result("{ ");
-
-	result << std::get<0>(position) << ": " << std::get<1>(position) << ", \""
-			<< std::get<2>(position) << "\" }";
-
-	return result;
+	std::list<decltype(position)> result = { position };
+/*********
+	return Container_Printer(result, "{ ", ": ", ", \"", "\" }").print_content();
 }
 template<> std::function<
 		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
 		std::tuple<Ensemble*, size_t, std::string>>::printer =
-		class_std__tuple_Ensemble__size_t__std__string__;
+		print_std__tuple_Ensemble__size_t__std__string__;
 Class<std::tuple<Ensemble*, size_t, std::string>> Ensemble::localize(
 		const Element& instance, const Log* caller) {
 	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
@@ -594,3 +582,5 @@ Ensemble::~Ensemble() {
 }
 
 } /* namespace base */
+//std::forward<const Element::Instant>(
+//std::forward<const std::map<std::string, std::string>>(
