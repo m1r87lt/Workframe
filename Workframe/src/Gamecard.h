@@ -39,14 +39,13 @@ public:
 
 namespace base {
 
-template<> class Class<std::unique_ptr<game::Card>> final: public Object {
+template<> class Class<std::unique_ptr<game::Card>> : public Class<
+		std::unique_ptr<base::Element>> {
 	Class(Unique_ptr&&);
 public:
-	Unique_ptr card;
-
-	virtual std::ostringstream prints() const;
 	static Class<std::unique_ptr<game::Card>> dynamicCast(Unique_ptr&& card);
 
+	virtual ~Class() = default;
 	Class(const Class<std::unique_ptr<game::Card>>&) = delete;
 	Class(Class<std::unique_ptr<game::Card>> &&);
 	Class<std::unique_ptr<game::Card>>& operator =(

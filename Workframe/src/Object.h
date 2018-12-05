@@ -264,6 +264,7 @@ public:
 	virtual std::ostringstream prints() const;
 
 	Class(std::string, const Log* = nullptr);
+	Class(const Class<std::string>&);
 	Class<std::string> operator =(Class<std::string> &&);
 	Class<std::string>& operator =(std::string);
 };

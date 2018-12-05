@@ -232,6 +232,9 @@ Class<std::string>::Class(std::string value, const Log* caller) :
 		Object(caller, value) {
 	this->value = value;
 }
+Class<std::string>::(const Class<std::string>& copy) : Object(copy) {
+	value = copy.value;
+}
 Class<std::string> Class<std::string>::operator =(
 		Class<std::string> && moving) {
 	value = moving.value;

@@ -27,6 +27,7 @@ class Container_Printer {
 	};
 
 	std::string text;
+	std::list<std::string> separator_list;
 
 	std::list<std::string> static prepare_separators() {
 		return std::list<std::string>();
@@ -57,29 +58,32 @@ class Container_Printer {
 
 		return result;
 	}
-	template<typename ... Types> static std::list<std::string> print_content(
+	template<typename ... Types> static std::list<std::string> print_type(
 			const std::tuple<Types ...>& content) {
 		return list_components<std::tuple<Types...>, Types ...>(content);
 	}
-	template<typename First, typename Second> static std::list<std::string> print_content(
+	template<typename First, typename Second> static std::list<std::string> print_type(
 			const std::pair<First, Second>& content) {
 		std::tuple<First, Second> result = content;
 
 		return list_components(result);
 	}
-	template<typename Type> static std::list<std::string> print_content(
+	template<typename Type> static std::list<std::string> print_type(
 			const Type& content) {
 		std::tuple<Type> result = std::make_tuple(content);
 
 		return list_components(result);
 	}
+	template<typename Type> static std::list<std::string> print_content(
+			const Type& content) {
+		return print_type(content);
+	}
 public:
 	std::ostringstream operator ()() const {
 		return std::ostringstream(text);
 	}
-	template<typename Content> static std::string print_content(/*****
-			Content& content, std::list<std::string> separator_list) {
-		auto contents = print_content(content);
+	template<typename Content> std::string prints_content(Content& content) {
+		auto contents = print_content<content>(content);
 		auto end = contents.end();
 		auto separator = separator_list.begin();
 		std::string result;
@@ -87,12 +91,14 @@ public:
 		for (auto iterator = contents.begin(); iterator != end; ++iterator)
 			result += *separator++ + *iterator;
 		result += *separator;
+
+		return result;
 	}
 
 	template<typename Container, typename ... Separators> Container_Printer(
 			const Container& container, Separators&& ... separators) {
-		auto separator_list = prepare_separators(separators ...);
-		auto separator_size = separator_list.size();
+		auto separator_size = (separator_list = prepare_separators(
+				separators ...)).size();
 		auto content_size = size<typename Container::value_type>::value;
 
 		if (separator_size == 0)
@@ -108,7 +114,7 @@ public:
 		}
 		text = "{";
 		for (auto content : container)
-			text += "\n" + print_content(content, separator_list);
+			text += "\n" + prints_content(content);
 		text += text == "{" ? " }" : "\n}";
 	}
 	Container_Printer(const Container_Printer&) = delete;
@@ -195,6 +201,25 @@ std::out_of_range throw_out_of_range_0(Primitive<size_t>, Primitive<size_t>,
 std::invalid_argument throw_null_invalid_argument(Object&, const Log&);
 std::string log_not_root(const Element&, const Log&, bool = true);
 std::domain_error throw_not_root(const Element&, const Log&);
+template<typename Type> std::ostringstream print_std__vector(
+		const std::vector<Type>& sequence) {
+	return Container_Printer(sequence, "\t")();
+}
+template<typename Type> std::ostringstream unprint(const Type& unprintable) {
+	std::ostringstream result("{ ");
+
+	result << &unprintable << " }";
+
+	return result;
+}
+template<typename First, typename Second> std::ostringstream unprint_std__pair_first(
+		const std::pair<First, Second>& unprintable) {
+	std::ostringstream result("{ ");
+
+	result << unprintable.first << "; " << &unprintable.second << " }";
+
+	return result;
+}
 struct Ensemble: public Element {
 	using Content = std::pair<std::string, std::unique_ptr<Element>>;
 	using Container = std::list<Content>;

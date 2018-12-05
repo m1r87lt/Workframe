@@ -277,7 +277,7 @@ void Ensemble::gets(Class<std::string> name, Unique_ptr && instance,
 		current->is_modified(&log);
 		is_modified(&log);
 	} else
-		throw throw_invalid_argument_null(instance, log);
+		throw throw_null_invalid_argument(instance, log);
 }
 void Ensemble::takes(Primitive<Ensemble*> ensemble, Primitive<size_t> source,
 		Primitive<size_t> destination = 0, const Log* caller) {
@@ -294,7 +294,7 @@ void Ensemble::takes(Primitive<Ensemble*> ensemble, Primitive<size_t> source,
 		gets(target->first, Unique_ptr(giver->gives(target, &log), &log),
 				destination, &log);
 	} else
-		throw throw_invalid_argument_null(ensemble, log);
+		throw throw_null_invalid_argument(ensemble, log);
 }
 void Ensemble::takes(Primitive<Ensemble*> ensemble, Class<std::string> source,
 		Primitive<size_t> destination, const Log* caller) {
@@ -308,7 +308,7 @@ void Ensemble::takes(Primitive<Ensemble*> ensemble, Class<std::string> source,
 						giver->gives(giver->localizes(source.is(), &log).second,
 								&log), &log), destination, &log);
 	else
-		throw throw_invalid_argument_null(ensemble, log);
+		throw throw_null_invalid_argument(ensemble, log);
 }
 Primitive<size_t> Ensemble::has_size(const Log* caller) const {
 	return method_primitive(container.size(), *this, __func__, caller);
@@ -339,11 +339,11 @@ Unique_ptr Ensemble::pop(Element& instance, const Log* caller) {
 				return log.returns(
 						Unique_ptr(ensemble->gives(current.second, &log), &log));
 		} else
-			throw throw_root_element(instance, log);
+			throw throw_not_root(instance, log);
 	} else {
 		Primitive<Ensemble*> primitive_ensemble(ensemble, &log);
 
-		throw throw_invalid_argument_null(primitive_ensemble, log);
+		throw throw_null_invalid_argument(primitive_ensemble, log);
 	}
 }
 void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
@@ -353,7 +353,7 @@ void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
 	auto current = localize(instance, &log).is();
 
 	if (ensemble)
-		throw throw_invalid_argument_null(ensemble, log);
+		throw throw_null_invalid_argument(ensemble, log);
 	((Ensemble*) ensemble)->takes(std::get<0>(current), std::get<1>(current),
 			position, &log);
 }
@@ -361,8 +361,9 @@ void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
 std::ostringstream print_std__tuple_Ensemble__size_t__std__string__(
 		const std::tuple<Ensemble*, size_t, std::string>& position) {
 	std::list<decltype(position)> result = { position };
-/*********
-	return Container_Printer(result, "{ ", ": ", ", \"", "\" }").print_content();
+
+	return Container_Printer(result, "{ ", ": ", ", \"", "\" }").prints_content(
+			position);
 }
 template<> std::function<
 		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
@@ -395,18 +396,14 @@ Class<std::tuple<Ensemble*, size_t, std::string>> Ensemble::localize(
 									+ " not exists in "
 									+ ensemble->prints().str() + "."));
 	} else
-		log_root_element(instance, log);
+		log_not_root(instance, log);
 
 	return log.returns(
 			Class<std::tuple<Ensemble*, size_t, std::string>>(
 					std::make_tuple(ensemble, position, name), &log));
 }
-std::ostringstream class_std__vector_std__string__(
-		const std::vector<std::string> sequence) {
-	return Container_Printer(sequence, "\t")();
-}
 template<> std::function<std::ostringstream(const std::vector<std::string>&)> Class<
-		std::vector<std::string>>::printer = class_std__vector_std__string__;
+		std::vector<std::string>>::printer = print_std__vector<std::string>;
 Class<std::vector<std::string>> Ensemble::have_path(const Element& instance,
 		const Log* caller) {
 	std::vector<std::string> result;
@@ -466,17 +463,10 @@ bool Ensemble::names(std::string name, std::string candidate,
 						std::ostringstream(
 								"ERROR: " + evaluated.prints().str() + ".")));
 }
-std::ostringstream class_Container__iterator_(
-		const Ensemble::Container::iterator& position) {
-	std::ostringstream result("{ ");
-
-	result << &position << " }";
-
-	return result;
-}
 template<> std::function<
 		std::ostringstream(const Ensemble::Container::iterator&)> Class<
-		Ensemble::Container::iterator>::printer = class_Container__iterator_;
+		Ensemble::Container::iterator>::printer = unprint<
+		Ensemble::Container::iterator>;
 Ensemble::Container::iterator Ensemble::localizes(size_t position,
 		const Log* caller) const {
 	auto result = const_cast<Container&>(container).begin();
@@ -495,19 +485,11 @@ Ensemble::Container::iterator Ensemble::localizes(size_t position,
 
 	return log.returns(Class<decltype(result)>(result, &log)).becomes();
 }
-template<typename First> std::ostringstream class_std__pair__Container__iterator__(
-		const std::pair<First, Ensemble::Container::iterator>& position) {
-	std::ostringstream result("{ ");
-
-	result << position.first << "; " << &position.second << " }";
-
-	return result;
-}
 template<> std::function<
 		std::ostringstream(
 				const std::pair<size_t, Ensemble::Container::iterator>&)> Class<
 		std::pair<size_t, Ensemble::Container::iterator>>::printer =
-		class_std__pair__Container__iterator__<size_t>;
+		unprint_std__pair_first<size_t, Ensemble::Container::iterator>;
 std::pair<size_t, Ensemble::Container::iterator> Ensemble::localizes(
 		std::string name, const Log* caller) const {
 	Class<std::string> candidate(name, caller);
@@ -548,7 +530,7 @@ template<> std::function<
 		std::ostringstream(
 				const std::pair<Ensemble*, Ensemble::Container::iterator>&)> Class<
 		std::pair<Ensemble*, Ensemble::Container::iterator>>::printer =
-		class_std__pair__Container__iterator__<Ensemble*>;
+		unprint_std__pair_first<Ensemble*, Ensemble::Container::iterator>;
 std::pair<Ensemble*, Ensemble::Container::iterator> Ensemble::find(
 		Element& instance, const Log* caller) {
 	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
@@ -564,17 +546,16 @@ std::pair<Ensemble*, Ensemble::Container::iterator> Ensemble::find(
 		while (current != end && current->second.get() != &instance)
 			++current;
 	} else
-		log_root_element(instance, log);
+		log_not_root(instance, log);
 
 	return log.returns(
 			Class<std::pair<Ensemble*, Container::iterator>>(
 					std::make_pair(ensemble, current), &log)).becomes();
 }
 
-Ensemble::Ensemble(Class<std::string> label, const Log* caller,
-		Fields attributes) :
-		Object(caller, label.is()), Log(caller, label.is(), false), Element(
-				label, caller, attributes) {
+Ensemble::Ensemble(std::string label, const Log* caller, Fields attributes) :
+		Object(caller, label), Log(caller, label, false), Element(label, caller,
+				attributes) {
 	as_constructor<false>("base", __func__, caller, attributes);
 }
 Ensemble::~Ensemble() {
@@ -582,5 +563,3 @@ Ensemble::~Ensemble() {
 }
 
 } /* namespace base */
-//std::forward<const Element::Instant>(
-//std::forward<const std::map<std::string, std::string>>(

@@ -106,19 +106,19 @@ void Deck::randomly_generates(base::Unique_ptr&& cover, base::Unique_ptr&& face,
 void Deck::gets_over(Unique_ptr&& card, const Log* caller) {
 	auto log = as_method(__func__, caller);
 
-	gets(base::Class<std::string>("card", &log), std::move(card.card),
+	gets(base::Class<std::string>("card", &log), std::move(card),
 			base::Primitive<size_t>(1, &log), &log);
 }
 void Deck::gets_under(Unique_ptr&& card, const Log* caller) {
 	auto log = as_method(__func__, caller);
 
-	gets(base::Class<std::string>("card", &log), std::move(card.card),
+	gets(base::Class<std::string>("card", &log), std::move(card),
 			has_size(&log), &log);
 }
 void Deck::randomly_gets(Unique_ptr&& card, const Log* caller) {
 	auto log = as_method(__func__, caller);
 
-	gets(base::Class<std::string>("card", &log), std::move(card.card),
+	gets(base::Class<std::string>("card", &log), std::move(card),
 			randomly_gives(true, &log), &log);
 }
 Deck::Unique_ptr Deck::draws_over(const Log* caller) {
@@ -203,28 +203,22 @@ Deck::~Deck() {
 	as_destructor("game", __func__);
 }
 
-}
-/* namespace game */
+} /* namespace game */
 
 namespace base {
 
 // Class<std::unique_ptr<game::Card>>
-std::ostringstream Class<std::unique_ptr<game::Card>>::prints() const {
-	return card.prints();
-}
 Class<std::unique_ptr<game::Card>> Class<std::unique_ptr<game::Card>>::dynamicCast(
 		Unique_ptr&& card) {
-	dynamic_cast<game::Card*>((Element*) card);
-
 	return Class<std::unique_ptr<game::Card>>(std::move(card));
 }
 
 Class<std::unique_ptr<game::Card>>::Class(Unique_ptr&& card) :
-		Object(std::move(card)), card(std::move(card)) {
+		Unique_ptr(std::move(card)) {
 }
 Class<std::unique_ptr<game::Card>>::Class(
 		Class<std::unique_ptr<game::Card>> && moving) :
-		Object(std::move(moving)), card(std::move(moving.card)) {
+		Unique_ptr(std::move(moving)) {
 }
 
 } /* namespace base */
