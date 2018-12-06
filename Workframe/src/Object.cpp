@@ -198,6 +198,14 @@ Primitive<const char*>::Primitive(const char* value, const Log* caller) :
 		Object(caller, value) {
 	this->value = value;
 }
+Primitive<const char*>::Primitive(const Primitive<const char*>& copy) :
+		Object(copy) {
+	value = copy.value;
+}
+Primitive<const char*>::Primitive(Primitive<const char*> && moving) :
+		Object(std::move(moving)) {
+	value = moving.value;
+}
 Primitive<const char*>& Primitive<const char*>::operator =(
 		Primitive<const char*> && moving) {
 	value = moving.value;
@@ -232,7 +240,8 @@ Class<std::string>::Class(std::string value, const Log* caller) :
 		Object(caller, value) {
 	this->value = value;
 }
-Class<std::string>::(const Class<std::string>& copy) : Object(copy) {
+Class<std::string>::Class(const Class<std::string>& copy) :
+		Object(copy) {
 	value = copy.value;
 }
 Class<std::string> Class<std::string>::operator =(
