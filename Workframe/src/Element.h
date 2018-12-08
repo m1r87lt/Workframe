@@ -68,13 +68,6 @@ class Container_Printer {
 
 		return list_components(result);
 	}
-	template<typename Container> void prints_type(const Container& container) {
-		text = "{";
-		for (auto content : container) {
-			text += "\n" + content;
-		}
-		text += text == "{" ? " }" : "\n}";
-	}
 	template<typename Container, typename ... Separators> void prints_tuple(
 			size_t content_size, const Container& container,
 			const Separators& ... separators) {
@@ -92,7 +85,6 @@ class Container_Printer {
 			separator_list.resize(content_size);
 			separator_list.back() = back;
 		}
-		text = "{";
 		for (auto content : container) {
 			auto contents = print_tuple(content);
 			auto end = contents.end();
@@ -103,20 +95,27 @@ class Container_Printer {
 				text += *separator++ + *iterator;
 			text += *separator;
 		}
-		text += text == "{" ? " }" : "\n}";
 	}
 public:
-	std::ostringstream operator ()() const {
-		return std::ostringstream(text);
+
+	std::ostringstream operator ()(bool close) const {
+		return std::ostringstream(
+				close ? (text.empty() ? "{ }" : "{" + text + "\n}") : text);
 	}
 
 	template<typename Container> Container_Printer(const Container& container) {
-		prints_type(container);
+		for (auto content : container)
+			text += "\n" + content;
 	}
-	template<typename Container, typename Separator, typename ... Separators> Container_Printer(
-			const Container& container, Separator&& separator,
-			Separators&& ... separators) {
-		prints_tuple(container, separator, separators ...);
+	template<int Number, typename Container, typename ... Separators> Container_Printer(
+			const Container& container, Separators&& ... separators) {
+		prints_tuple(container, separators ...);
+	}
+	template<bool Assert, typename Type, typename ... Separators> Container_Printer(
+			const Type& object, Separators&& ... separators) {
+		std::list<Type> container = { object };
+
+		prints_tuple(container, separators ...);
 	}
 	Container_Printer(const Container_Printer&) = delete;
 	Container_Printer& operator =(const Container_Printer&) = delete;

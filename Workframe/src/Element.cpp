@@ -360,9 +360,7 @@ void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
 
 std::ostringstream print_std__tuple_Ensemble__size_t__std__string__(
 		const std::tuple<Ensemble*, size_t, std::string>& position) {
-	std::list<decltype(position)> result = { position };
-
-	return Container_Printer(result, "{ ", ": ", ", \"", "\" }").prints_content(
+	return Container_Printer<true>(position, "{ ", ": ", ", \"", "\" }")(
 			position);
 }
 template<> std::function<
