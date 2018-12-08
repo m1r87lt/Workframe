@@ -98,7 +98,7 @@ class Container_Printer {
 	}
 public:
 
-	std::ostringstream operator ()(bool close) const {
+	std::ostringstream operator ()(bool close = true) const {
 		return std::ostringstream(
 				close ? (text.empty() ? "{ }" : "{" + text + "\n}") : text);
 	}

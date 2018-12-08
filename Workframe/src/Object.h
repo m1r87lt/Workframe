@@ -192,10 +192,10 @@ public:
 			Object(copy) {
 		value = copy.value;
 	}
-	Primitive(const Primitive<Type> && moving) :
-			Object(std::move(moving)) {
-		value = moving.value;
-	}
+	/*	Primitive(const Primitive<Type> && moving) :
+	 Object(std::move(moving)) {
+	 value = moving.value;
+	 }*/
 	Primitive<Type>& operator =(Primitive<Type> && moving) {
 		value = moving.value;
 
@@ -215,7 +215,7 @@ public:
 
 	Primitive(const char*, const Log* = nullptr);
 	Primitive(const Primitive<const char*>&);
-	Primitive(Primitive<const char*> &&);
+//	Primitive(Primitive<const char*> &&);
 	Primitive<const char*>& operator =(Primitive<const char*> &&);
 	Primitive<const char*>& operator =(const char*);
 };
@@ -246,9 +246,9 @@ public:
 	Class(const Class<Type>& copy) :
 			Object(copy), value(copy.value) {
 	}
-	Class(Class<Type> && moving) :
-			Object(std::move(moving)), value(std::move(moving.value)) {
-	}
+	/*	Class(Class<Type> && moving) :
+	 Object(std::move(moving)), value(std::move(moving.value)) {
+	 }*/
 	Class<Type>& operator =(Class<Type> && moving) {
 		value = std::move(moving.value);
 

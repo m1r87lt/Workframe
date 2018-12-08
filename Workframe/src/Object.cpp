@@ -202,10 +202,10 @@ Primitive<const char*>::Primitive(const Primitive<const char*>& copy) :
 		Object(copy) {
 	value = copy.value;
 }
-Primitive<const char*>::Primitive(Primitive<const char*> && moving) :
-		Object(std::move(moving)) {
-	value = moving.value;
-}
+/*Primitive<const char*>::Primitive(Primitive<const char*> && moving) :
+ Object(std::move(moving)) {
+ value = moving.value;
+ }*/
 Primitive<const char*>& Primitive<const char*>::operator =(
 		Primitive<const char*> && moving) {
 	value = moving.value;
