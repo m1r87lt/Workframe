@@ -166,7 +166,7 @@ protected:
 
 		return result;
 	}
-
+	friend class Method;
 	Log(const Log*, std::string, bool);
 };
 
@@ -192,10 +192,6 @@ public:
 			Object(copy) {
 		value = copy.value;
 	}
-	/*	Primitive(const Primitive<Type> && moving) :
-	 Object(std::move(moving)) {
-	 value = moving.value;
-	 }*/
 	Primitive<Type>& operator =(Primitive<Type> && moving) {
 		value = moving.value;
 
@@ -215,7 +211,6 @@ public:
 
 	Primitive(const char*, const Log* = nullptr);
 	Primitive(const Primitive<const char*>&);
-//	Primitive(Primitive<const char*> &&);
 	Primitive<const char*>& operator =(Primitive<const char*> &&);
 	Primitive<const char*>& operator =(const char*);
 };
@@ -244,29 +239,19 @@ public:
 					std::forward<Arguments&&>(arguments) ...) {
 	}
 	Class(const Class<Type>& copy) :
-			Object(copy), value(copy.value) {
+			Object(copy), value(std::forward<Type>(copy.value)) {
 	}
-	/*	Class(Class<Type> && moving) :
-	 Object(std::move(moving)), value(std::move(moving.value)) {
-	 }*/
 	Class<Type>& operator =(Class<Type> && moving) {
-		value = std::move(moving.value);
+		value = std::forward<Type>(moving.value);
 
 		return *this;
 	}
-	Class(Type& copy, const Log* caller = nullptr) :
-			Object(caller, typeid(Type).name()), value(copy) {
+	Class(Type&& object, const Log* caller = nullptr) :
+			Object(caller, typeid(Type).name()), value(
+					std::forward<Type>(object)) {
 	}
-	Class<Type>& operator =(Type& copy) {
-		value = copy;
-
-		return *this;
-	}
-	Class(Type&& copy, const Log* caller = nullptr) :
-			Object(caller, typeid(Type).name()), value(std::move(copy)) {
-	}
-	Class<Type>& operator =(Type&& copy) {
-		value = std::move(copy);
+	Class<Type>& operator =(Type&& object) {
+		value = std::forward<Type>(object);
 
 		return *this;
 	}
@@ -329,22 +314,6 @@ template<typename Type> Class<Type> binary_class(const Object& lefthand,
 
 	return log.returns(Class<Type>(returning, &log));
 }
-template<typename Type, typename ... Arguments> Primitive<Type> method_primitive(
-		Type returning, std::string label, const Log* caller = nullptr,
-		Arguments& ... arguments) {
-	auto log = Log::as_method(label, false, caller, typeid(returning),
-			arguments ...);
-
-	return log.returns(Primitive<Type>(returning, &log));
-}
-template<typename Type, typename ... Arguments> Primitive<Type> method_primitive(
-		Type returning, const Log& object, std::string label,
-		const Log* caller = nullptr, Arguments& ... arguments) {
-	auto log = object.as_method(label, false, caller, typeid(returning),
-			arguments ...);
-
-	return log.returns(Primitive<Type>(returning, &log));
-}
 template<typename Type, typename ... Arguments> Primitive<Type> function_primitive(
 		Type returning, std::string label, const Log* caller = nullptr,
 		Arguments& ... arguments) {
@@ -352,22 +321,6 @@ template<typename Type, typename ... Arguments> Primitive<Type> function_primiti
 			arguments ...);
 
 	return log.returns(Primitive<Type>(returning, &log));
-}
-template<typename Type, typename ... Arguments> Class<Type> method_class(
-		Type&& returning, std::string label, const Log* caller = nullptr,
-		Arguments& ... arguments) {
-	auto log = Log::as_method(label, false, caller, typeid(returning),
-			arguments ...);
-
-	return log.returns(Class<Type>(returning, &log));
-}
-template<typename Type, typename ... Arguments> Class<Type> method_class(
-		Type&& returning, const Log& object, std::string label,
-		const Log* caller = nullptr, Arguments& ... arguments) {
-	auto log = object.as_function(object.prints().str() + "." + label, false,
-			caller, typeid(returning), arguments ...);
-
-	return log.returns(Class<Type>(returning, &log));
 }
 template<typename Type, typename ... Arguments> Class<Type> function_class(
 		Type&& returning, std::string label, const Log* caller = nullptr,
@@ -377,6 +330,41 @@ template<typename Type, typename ... Arguments> Class<Type> function_class(
 
 	return log.returns(Class<Type>(returning, &log));
 }
+
+struct Method {
+	template<typename Type, typename ... Arguments> static Primitive<Type> return_primitive(
+			Type returning, std::string label, const Log* caller = nullptr,
+			Arguments& ... arguments) {
+		auto log = Log::as_method(label, false, caller, typeid(returning),
+				arguments ...);
+
+		return log.returns(Primitive<Type>(returning, &log));
+	}
+	template<typename Type, typename ... Arguments> static Primitive<Type> return_primitive(
+			Type returning, const Log& object, std::string label,
+			const Log* caller = nullptr, Arguments& ... arguments) {
+		auto log = object.as_method<false>(label, caller, typeid(returning),
+				arguments ...);
+
+		return log.returns(Primitive<Type>(returning, &log));
+	}
+	template<typename Type, typename ... Arguments> static Class<Type> return_class(
+			Type&& returning, std::string label, const Log* caller = nullptr,
+			Arguments& ... arguments) {
+		auto log = Log::as_method(label, false, caller, typeid(returning),
+				arguments ...);
+
+		return log.returns(Class<Type>(std::forward<Type>(returning), &log));
+	}
+	template<typename Type, typename ... Arguments> static Class<Type> return_class(
+			Type returning, const Log& object, std::string label,
+			const Log* caller = nullptr, Arguments& ... arguments) {
+		auto log = object.as_method<false>(label, caller, typeid(returning),
+				arguments ...);
+
+		return log.returns(Class<Type>(std::forward<Type>(returning), &log));
+	}
+};
 
 } /* namespace base */
 

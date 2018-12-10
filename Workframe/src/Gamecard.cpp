@@ -20,7 +20,7 @@ base::Element& Card::operator ()(const Log* caller) const {
 	return as_method("", caller, typeid(Element&)).returns(operator [](covered));
 }
 base::Primitive<bool> Card::is_covered(const Log* caller) const {
-	return base::method_primitive(covered, *this, __func__, caller);
+	return base::Method::return_primitive(covered, *this, __func__, caller);
 }
 void Card::operator ~() {
 	as_unary("~");
@@ -166,7 +166,7 @@ void Deck::shuffles(const Log* caller) {
 	}
 }
 base::Primitive<bool> Deck::is_covered(const Log* caller) const {
-	return base::method_primitive(covered, *this, __func__, caller);
+	return base::Method::return_primitive(covered, *this, __func__, caller);
 }
 void Deck::operator ~() {
 	as_unary("~");

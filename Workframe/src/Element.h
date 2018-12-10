@@ -69,10 +69,11 @@ class Container_Printer {
 		return list_components(result);
 	}
 	template<typename Container, typename ... Separators> void prints_tuple(
-			size_t content_size, const Container& container,
-			const Separators& ... separators) {
+			const Container& container, const Separators& ... separators) {
 		auto separator_size = (separator_list = prepare_separators(
 				separators ...)).size();
+		auto content_size =
+				std::tuple_size<typename Container::value_type>::value;
 
 		if (separator_size == 0)
 			separator_list.emplace_front("{ ");
@@ -103,16 +104,20 @@ public:
 				close ? (text.empty() ? "{ }" : "{" + text + "\n}") : text);
 	}
 
-	template<typename Container> Container_Printer(const Container& container) {
+	template<typename Container, typename ... Separators> Container_Printer(
+			const Container& container, std::string before, std::string after) {
+		std::ostringstream result;
+
 		for (auto content : container)
-			text += "\n" + content;
+			result << "\n" << before << content << after;
+		text = result.str();
 	}
-	template<int Number, typename Container, typename ... Separators> Container_Printer(
-			const Container& container, Separators&& ... separators) {
+	template<typename Container, typename ... Separators> Container_Printer(
+			bool, const Container& container, Separators&& ... separators) {
 		prints_tuple(container, separators ...);
 	}
-	template<bool Assert, typename Type, typename ... Separators> Container_Printer(
-			const Type& object, Separators&& ... separators) {
+	template<typename Type, typename ... Separators> Container_Printer(
+			std::string, const Type& object, Separators&& ... separators) {
 		std::list<Type> container = { object };
 
 		prints_tuple(container, separators ...);
@@ -125,7 +130,7 @@ public:
 
 template<typename First, typename Second> std::ostringstream print_std__map(
 		const std::map<First, Second>& container) {
-	return Container_Printer(container, "\t", ": ", "")();
+	return Container_Printer(false, container, "\t", ": ", "")();
 }
 using Fields = Class<std::map<std::string, std::string>>;
 template<typename Type> std::ostringstream print_std__set(
@@ -136,11 +141,11 @@ struct Element: virtual public Log {
 	using Instant = std::chrono::system_clock::time_point;
 	using Modifications = std::map<std::string, std::pair<std::string, std::string>>;
 
-	Class<const Instant> exists_from(const Log* = nullptr) const;
-	Class<const Instant> since(const Log* = nullptr) const;
+	Class<Instant> exists_from(const Log* = nullptr) const;
+	Class<Instant> since(const Log* = nullptr) const;
 	void is_modified(const Log* = nullptr);
-	Class<const std::map<std::string, std::string>> gives_attributes(
-			const Log* = nullptr) const;
+	Class<std::map<std::string, std::string>> gives_attributes(const Log* =
+			nullptr) const;
 	void gets_attributes(Fields, const Log* = nullptr);
 	Class<Modifications> gives_modifications(const Log* = nullptr);
 	static Class<std::set<Element*>> give_everything(const Log* = nullptr);
@@ -203,7 +208,7 @@ std::string log_not_root(const Element&, const Log&, bool = true);
 std::domain_error throw_not_root(const Element&, const Log&);
 template<typename Type> std::ostringstream print_std__vector(
 		const std::vector<Type>& sequence) {
-	return Container_Printer(sequence, "\t")();
+	return Container_Printer(sequence, "\t", "")();
 }
 template<typename Type> std::ostringstream unprint(const Type& unprintable) {
 	std::ostringstream result("{ ");
@@ -271,7 +276,7 @@ private:
 	static std::pair<Ensemble*, Container::iterator> find(Element&, const Log* =
 			nullptr);
 protected:
-	Ensemble(std::string, const Log* = nullptr, Fields = nullptr);
+	Ensemble(std::string, const Log* = nullptr, Fields = Fields(nullptr));
 	friend Unique_ptr;
 };
 
