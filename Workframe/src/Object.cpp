@@ -10,6 +10,8 @@
 
 namespace base {
 
+#define OBJECT(caller) Object(caller, __func__)
+
 bool run = true;
 bool is_running() {
 	return run;
@@ -19,19 +21,22 @@ void ends_run() {
 }
 std::string give_substring_after(std::string string, const std::string match,
 		bool from_end = false, size_t number) {
-	auto position = from_end ? string.find(match, 0) : string.rfind(match);
+	auto position = from_end ? string.rfind(match) : string.find(match);
 	auto result =
-			((from_end = number ? from_end : !from_end)) ?
-					string.substr(0, position) :
-					string.substr(position + match.length());
+			string.substr(position + match.length());
+
+	string.substr(position);
+	if (number == 1)
 
 	if (number > 1)
 		return give_substring_after(result, match, from_end, --number);
+	else if (number < 0)
+		return string.substr(0, position);
 	else
-		return result;
+		return string;
 }
-std::string make_scopes(std::string label) {
-	return label;
+std::string make_scopes(std::string scope0, std::string scope1) {
+	return scope0 + "::" + scope1;
 }
 
 //Object
@@ -58,17 +63,17 @@ Object::Object(const Object* caller, std::string label) {
 }
 Object::Object(const Object& copy) {
 	label = copy.label;
-	logger = make_track(nullptr);
-}
-Object& Object::operator =(const Object& copy) {
-	label = copy.label;
-	logger = copy.logger;
-
-	return *this;
+	logger = make_track(give_substring_after(copy.logger, ".", true));
 }
 Object::Object(Object&& moving) {
 	label = moving.label;
 	logger = moving.logger;
+}
+Object& Object::operator =(Object&& assigning) {
+	label = assigning.label;
+	logger = assigning.logger;
+
+	return *this;
 }
 
 //Log

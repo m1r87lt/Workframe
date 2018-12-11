@@ -18,13 +18,14 @@ namespace base {
 bool is_running();
 void ends_run();
 std::string give_substring_after(std::string, std::string, bool, size_t = 1);
-std::string make_scopes(std::string);
-template<typename ... Arguments> std::string make_scopes(std::string label,
-		std::string ns, Arguments&& ... arguments) {
-	auto recursive = make_scopes(label, arguments ...);
+std::string make_scopes(std::string, std::string);
+template<typename ... Arguments> std::string make_scopes(std::string scope0,
+		std::string scope1, std::string scope2, Arguments&& ... scopes) {
+	auto recursive = make_scopes(scope1, scope2, scopes ...);
 
-	if (ns.empty())
-		recursive = ns + "::" + recursive;
+	if (recursive.substr(0, 2) != "::")
+		 scope0 += "::";
+	scope0 += recursive;
 
 	return recursive;
 }
@@ -43,9 +44,9 @@ protected:
 	Object(const Object*, std::string);
 	virtual ~Object() = default;
 	Object(const Object&);
-	Object& operator =(const Object&);
+	Object& operator =(const Object&) = delete;
 	Object(Object&&);
-	Object& operator =(Object&&) = delete;
+	Object& operator =(Object&&);
 };
 
 class Log: virtual public Object {
