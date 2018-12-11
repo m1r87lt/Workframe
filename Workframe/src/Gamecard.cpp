@@ -10,17 +10,15 @@
 namespace game {
 
 // Card
-base::Element& Card::operator [](bool cover) const {
-	base::Primitive<bool> is_covered(cover, this);
-
-	return as_binary("[]", is_covered, nullptr, typeid(Element&)).returns(
+base::Element& Card::operator [](base::Primitive<bool> cover) const {
+	return as_binary("[]", cover, nullptr, typeid(Element&)).returns(
 			Ensemble::operator [](cover ? 0 : 1));
 }
 base::Element& Card::operator ()(const Log* caller) const {
 	return as_method("", caller, typeid(Element&)).returns(operator [](covered));
 }
 base::Primitive<bool> Card::is_covered(const Log* caller) const {
-	return base::Method::return_primitive(covered, *this, __func__, caller);
+	return as_method<false>(__func__, caller, typeid(covered)).returns(covered);
 }
 void Card::operator ~() {
 	as_unary("~");
@@ -52,9 +50,8 @@ Card::Card(base::Unique_ptr&& cover, base::Unique_ptr&& face,
 		base::Fields attributes) :
 		Object(caller, base::make_scopes(__func__, "a")), base::Log(caller,
 				base::make_scopes(__func__, "a"), true), Ensemble(
-				base::make_scopes(__func__, "a"), caller) {
+				base::make_scopes(__func__, "a"), caller), covered(covered) {
 	as_constructor("a", __func__, this, cover, face, covered, attributes);
-	this->covered = covered;
 	gets(base::Class<std::string>("face"), std::move(face), 1, this);
 	gets(base::Class<std::string>("cover"), std::move(cover), 1, this);
 }
@@ -63,9 +60,8 @@ Card::~Card() {
 }
 
 // Deck
-size_t Deck::randomly_gives(bool add, const Log* caller) {
-	base::Primitive<bool> insert(add, caller);
-	auto log = as_method(__func__, caller, typeid(size_t), insert);
+size_t Deck::randomly_gives(base::Primitive<bool> add, const Log* caller) {
+	auto log = as_method(__func__, caller, typeid(size_t), add);
 	std::default_random_engine generator;
 	std::uniform_int_distribution<size_t> distribution(1,
 			has_size(&log) + (add ? 0 : 1));
@@ -166,7 +162,7 @@ void Deck::shuffles(const Log* caller) {
 	}
 }
 base::Primitive<bool> Deck::is_covered(const Log* caller) const {
-	return base::Method::return_primitive(covered, *this, __func__, caller);
+	return as_method<false>(__func__, caller, typeid(covered)).returns(covered);
 }
 void Deck::operator ~() {
 	as_unary("~");
@@ -195,9 +191,9 @@ Deck::Deck(base::Primitive<bool> covered, const Log* caller,
 		base::Fields attributes) :
 		Object(caller, base::make_scopes(__func__, "game")), Log(caller,
 				base::make_scopes(__func__, "game"), true), Ensemble(
-				base::make_scopes(__func__, "game"), caller, attributes) {
+				base::make_scopes(__func__, "game"), caller, attributes), covered(
+				covered) {
 	as_constructor("game", __func__, this, covered, attributes);
-	this->covered = covered;
 }
 Deck::~Deck() {
 	as_destructor("game", __func__);

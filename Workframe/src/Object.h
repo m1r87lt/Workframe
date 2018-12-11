@@ -77,7 +77,7 @@ class Log: virtual public Object {
 						+ log_arguments(arguments ...).str() + ")",
 				logging.open, returning);
 	}
-	static void log_return(Log&, Object&);
+	static void log_return(Log&, const Object&);
 public:
 	void notes(std::ostringstream) const;
 	template<typename Type> Type&& returns(Type&& returning) const {
@@ -239,10 +239,10 @@ public:
 					std::forward<Arguments&&>(arguments) ...) {
 	}
 	Class(const Class<Type>& copy) :
-			Object(copy), value(std::forward<Type>(copy.value)) {
+			Object(copy), value(copy.value) {
 	}
 	Class<Type>& operator =(Class<Type> && moving) {
-		value = std::forward<Type>(moving.value);
+		value = std::move(moving.value);
 
 		return *this;
 	}

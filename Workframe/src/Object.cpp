@@ -108,7 +108,7 @@ void Log::log_binary(const Log& logging, std::type_index type,
 									+ righthand.prints().str()), logging.open,
 			returning);
 }
-void Log::log_return(Log& logging, Object& returning) {
+void Log::log_return(Log& logging, const Object& returning) {
 	log(logging.has_logger(), returning.prints().str(), logging.open,
 			&returning);
 	logging.open = false;

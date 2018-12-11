@@ -21,20 +21,17 @@ std::ostringstream print_element__instant_(const Element::Instant& object) {
 	return result;
 }
 Class<Element::Instant> Element::exists_from(const Log* caller) const {
-	return Method::return_class(std::forward<Instant>(creation), *this,
+	return Method::return_class(Instant(creation), *this,
 			__func__, caller);
 }
-
 void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
 	modification = std::chrono::system_clock::now();
 }
-
 Class<std::map<std::string, std::string>> Element::gives_attributes(
 		const Log* caller) const {
 	return Method::return_class(attributes, *this, __func__, caller);
 }
-
 void Element::gets_attributes(Fields attributes, const Log* caller) {
 	auto log = as_method(__func__, caller, typeid(void), attributes);
 

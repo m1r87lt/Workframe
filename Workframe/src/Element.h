@@ -276,7 +276,7 @@ private:
 	static std::pair<Ensemble*, Container::iterator> find(Element&, const Log* =
 			nullptr);
 protected:
-	Ensemble(std::string, const Log* = nullptr, Fields = Fields(nullptr));
+	Ensemble(std::string, const Log* = nullptr, Fields = nullptr);
 	friend Unique_ptr;
 };
 

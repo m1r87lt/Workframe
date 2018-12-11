@@ -14,9 +14,9 @@
 namespace game {
 
 class Card final: protected base::Ensemble {
-	bool covered;
+	base::Primitive<bool> covered;
 
-	Element& operator [](bool) const;
+	Element& operator [](base::Primitive<bool>) const;
 protected:
 	Card(base::Unique_ptr&&, base::Unique_ptr&&, base::Primitive<bool>,
 			const Log* = nullptr, base::Fields = nullptr);
@@ -57,9 +57,9 @@ public:
 namespace game {
 
 class Deck final: protected base::Ensemble {
-	bool covered;
+	base::Primitive<bool> covered;
 
-	size_t randomly_gives(bool, const Log* = nullptr);
+	size_t randomly_gives(base::Primitive<bool>, const Log* = nullptr);
 protected:
 	Deck(base::Primitive<bool>, const Log* = nullptr, base::Fields = nullptr);
 	friend base::Unique_ptr;
