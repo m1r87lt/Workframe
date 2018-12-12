@@ -22,16 +22,18 @@ void ends_run() {
 std::string give_substring_after(std::string string, const std::string match,
 		bool from_end = false, size_t number) {
 	auto position = from_end ? string.rfind(match) : string.find(match);
-	auto result =
-			string.substr(position + match.length());
+	auto after = position + match.length();
+	auto rest = string.substr(after);
 
 	string.substr(position);
 	if (number == 1)
-
-	if (number > 1)
-		return give_substring_after(result, match, from_end, --number);
-	else if (number < 0)
+		return rest;
+	else if (number == -1)
 		return string.substr(0, position);
+	else if (number > 1)
+		return give_substring_after(rest, match, from_end, --number);
+	else if (number < -1)
+		return string.substr(0, after) + give_substring_after(rest, match, from_end, ++number);
 	else
 		return string;
 }
