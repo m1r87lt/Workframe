@@ -7,6 +7,7 @@
 
 #ifndef OBJECT_H_
 #define OBJECT_H_
+
 #include <string>
 #include <sstream>
 #include <typeindex>
@@ -14,32 +15,38 @@
 #include <functional>
 
 namespace base {
+#define BASE "base"
 
 bool is_running();
 void ends_run();
-std::string give_substring_after(std::string, std::string, bool, size_t = 1);
+std::string give_substring_after(std::string, std::string, bool, int = 1);
 std::string make_scopes(std::string, std::string);
 template<typename ... Arguments> std::string make_scopes(std::string scope0,
 		std::string scope1, std::string scope2, Arguments&& ... scopes) {
 	auto recursive = make_scopes(scope1, scope2, scopes ...);
 
 	if (recursive.substr(0, 2) != "::")
-		 scope0 += "::";
+		scope0 += "::";
 	scope0 += recursive;
 
 	return recursive;
 }
 
 class Object {
+	long long unsigned track;
 	std::string label;
 	std::string logger;
 	static long long unsigned tracker;
+	friend class Log;
+	void makes_track(const Object*);
+	void makes_track(std::string);
+	void constructs(std::string);
+	void becomes(Object&&);
 public:
 	virtual std::ostringstream prints() const = 0;
 protected:
 	const std::string& has_label() const;
 	const std::string& has_logger() const;
-	static std::string make_track(const Object*);
 
 	Object(const Object*, std::string);
 	virtual ~Object() = default;
@@ -50,7 +57,6 @@ protected:
 };
 
 class Log: virtual public Object {
-	long long unsigned track;
 	bool open;
 
 	template<typename ... Arguments> static std::ostringstream log_arguments(
@@ -140,7 +146,7 @@ protected:
 		Log result(caller, label, Open);
 
 		log(has_logger(),
-				make_scopes(label, ns, label) + "("
+				make_scopes(ns, label, label) + "("
 						+ log_arguments(arguments ...).str() + ")", Open,
 				nullptr);
 
@@ -151,7 +157,7 @@ protected:
 		Log result(nullptr, label, Open);
 
 		log(has_logger(),
-				make_scopes(label, ns,
+				make_scopes(ns, label,
 						give_substring_after(label, "~", false, 1)) + "()",
 				Open, nullptr);
 
@@ -216,7 +222,7 @@ public:
 	Primitive<const char*>& operator =(const char*);
 };
 
-template<typename Type> class Class: public Object {
+template<typename Type> class Class final: public Object {
 	Type value;
 public:
 	static std::function<std::ostringstream(const Type&)> printer;

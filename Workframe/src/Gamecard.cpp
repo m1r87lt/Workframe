@@ -8,10 +8,15 @@
 #include "Gamecard.h"
 
 namespace game {
+#define GAME "game"
 
 // Card
+const std::string Card::cover = "cover";
+const std::string Card::face = "face";
+const std::string Card::card = "card";
+
 base::Element& Card::operator [](base::Primitive<bool> cover) const {
-	return as_binary("[]", cover, nullptr, typeid(Element&)).returns(
+	return as_binary(__func__, cover, nullptr, typeid(Element&)).returns(
 			Ensemble::operator [](cover ? 0 : 1));
 }
 base::Element& Card::operator ()(const Log* caller) const {
@@ -35,8 +40,7 @@ void Card::covers(const Log* caller) {
 base::Unique_ptr Card::construct(base::Unique_ptr&& cover,
 		base::Unique_ptr&& face, base::Primitive<bool> covered,
 		const Log* caller, base::Fields attributes) {
-	auto log = as_method(
-			base::make_scopes(__func__, "game", typeid(Card).name()), true,
+	auto log = as_method(base::make_scopes(GAME, __func__, TYPEID(Card)), true,
 			caller, typeid(base::Unique_ptr), cover, face, covered, attributes);
 
 	return log.returns(
@@ -48,15 +52,15 @@ base::Unique_ptr Card::construct(base::Unique_ptr&& cover,
 Card::Card(base::Unique_ptr&& cover, base::Unique_ptr&& face,
 		base::Primitive<bool> covered, const Log* caller,
 		base::Fields attributes) :
-		Object(caller, base::make_scopes(__func__, "a")), base::Log(caller,
-				base::make_scopes(__func__, "a"), true), Ensemble(
-				base::make_scopes(__func__, "a"), caller), covered(covered) {
-	as_constructor("a", __func__, this, cover, face, covered, attributes);
-	gets(base::Class<std::string>("face"), std::move(face), 1, this);
-	gets(base::Class<std::string>("cover"), std::move(cover), 1, this);
+		ENSEMBLE(true,
+				base::make_scopes(GAME, __func__), caller, attributes), covered(
+				covered) {
+	as_constructor(GAME, __func__, this, cover, face, covered, attributes);
+	gets(base::Class<std::string>(Card::face), std::move(face), 1, this);
+	gets(base::Class<std::string>(Card::cover), std::move(cover), 1, this);
 }
 Card::~Card() {
-	as_destructor("a", __func__);
+	as_destructor(GAME, __func__);
 }
 
 // Deck
@@ -73,7 +77,7 @@ void Deck::generates_over(base::Unique_ptr&& cover, base::Unique_ptr&& face,
 	auto log = as_method(__func__, caller, typeid(void), cover, face,
 			attributes);
 
-	generates<Card>(base::Class<std::string>("card", &log),
+	generates<Card>(base::Class<std::string>(Card::card, &log),
 			base::Primitive<size_t>(1, &log), &log, std::move(cover),
 			std::move(face), base::Primitive<bool>(covered, &log),
 			base::Primitive<const Log*>(&log, &log), attributes);
@@ -83,7 +87,7 @@ void Deck::generates_under(base::Unique_ptr&& cover, base::Unique_ptr&& face,
 	auto log = as_method(__func__, caller, typeid(void), cover, face,
 			attributes);
 
-	generates<Card>(base::Class<std::string>("card", &log),
+	generates<Card>(base::Class<std::string>(Card::card, &log),
 			Ensemble::has_size(&log), &log, std::move(cover), std::move(face),
 			base::Primitive<bool>(covered, &log),
 			base::Primitive<const Log*>(&log, &log), attributes);
@@ -93,7 +97,7 @@ void Deck::randomly_generates(base::Unique_ptr&& cover, base::Unique_ptr&& face,
 	auto log = as_method(__func__, caller, typeid(void), cover, face,
 			attributes);
 
-	generates<Card>(base::Class<std::string>("card", &log),
+	generates<Card>(base::Class<std::string>(Card::card, &log),
 			base::Primitive<size_t>(randomly_gives(true, &log), &log), &log,
 			std::move(cover), std::move(face),
 			base::Primitive<bool>(covered, &log),
@@ -102,19 +106,19 @@ void Deck::randomly_generates(base::Unique_ptr&& cover, base::Unique_ptr&& face,
 void Deck::gets_over(Unique_ptr&& card, const Log* caller) {
 	auto log = as_method(__func__, caller);
 
-	gets(base::Class<std::string>("card", &log), std::move(card),
+	gets(base::Class<std::string>(Card::card, &log), std::move(card),
 			base::Primitive<size_t>(1, &log), &log);
 }
 void Deck::gets_under(Unique_ptr&& card, const Log* caller) {
 	auto log = as_method(__func__, caller);
 
-	gets(base::Class<std::string>("card", &log), std::move(card),
+	gets(base::Class<std::string>(Card::card, &log), std::move(card),
 			has_size(&log), &log);
 }
 void Deck::randomly_gets(Unique_ptr&& card, const Log* caller) {
 	auto log = as_method(__func__, caller);
 
-	gets(base::Class<std::string>("card", &log), std::move(card),
+	gets(base::Class<std::string>(Card::card, &log), std::move(card),
 			randomly_gives(true, &log), &log);
 }
 Deck::Unique_ptr Deck::draws_over(const Log* caller) {
@@ -178,8 +182,7 @@ void Deck::covers(const Log* caller) {
 }
 base::Unique_ptr Deck::construct(base::Primitive<bool> covered,
 		const Log* caller, base::Fields attributes) {
-	auto log = as_method(
-			base::make_scopes(__func__, "game", typeid(Deck).name()), true,
+	auto log = as_method(base::make_scopes(GAME, __func__, TYPEID(Deck)), true,
 			caller, typeid(base::Unique_ptr), covered, attributes);
 
 	return log.returns(
@@ -189,14 +192,12 @@ base::Unique_ptr Deck::construct(base::Primitive<bool> covered,
 
 Deck::Deck(base::Primitive<bool> covered, const Log* caller,
 		base::Fields attributes) :
-		Object(caller, base::make_scopes(__func__, "game")), Log(caller,
-				base::make_scopes(__func__, "game"), true), Ensemble(
-				base::make_scopes(__func__, "game"), caller, attributes), covered(
+		ENSEMBLE(false, base::make_scopes(GAME, __func__), caller, attributes), covered(
 				covered) {
-	as_constructor("game", __func__, this, covered, attributes);
+	as_constructor(GAME, __func__, this, covered, attributes);
 }
 Deck::~Deck() {
-	as_destructor("game", __func__);
+	as_destructor(GAME, __func__);
 }
 
 } /* namespace game */

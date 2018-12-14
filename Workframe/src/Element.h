@@ -16,6 +16,11 @@
 #include <set>
 #include <memory>
 #include <vector>
+#define NEW_LOG(caller, label, open) Object(caller, label), Log(caller, label, open)
+#define ASSIGN_LOG(instance) Object(instance), Log(instance)
+#define ELEMENT(open, label, caller, attributes) Object(caller, label), Log(caller, label, open), Element(label, caller, attributes)
+#define ENSEMBLE(open, label, caller, attributes) Object(caller, label), Log(caller, label, open), Ensemble(label, caller, attributes)
+#define TYPEID(type) #type
 
 namespace base {
 class Container_Printer {
@@ -144,8 +149,7 @@ struct Element: virtual public Log {
 	Class<Instant> exists_from(const Log* = nullptr) const;
 	Class<Instant> since(const Log* = nullptr) const;
 	void is_modified(const Log* = nullptr);
-	Class<std::map<std::string, std::string>> gives_attributes(const Log* =
-			nullptr) const;
+	Fields gives_attributes(const Log* = nullptr) const;
 	void gets_attributes(Fields, const Log* = nullptr);
 	Class<Modifications> gives_modifications(const Log* = nullptr);
 	static Class<std::set<Element*>> give_everything(const Log* = nullptr);
@@ -167,7 +171,6 @@ protected:
 
 template<> class Class<std::unique_ptr<Element>> : public Object {
 	std::unique_ptr<Element> value;
-
 	friend class Ensemble;
 	static std::unique_ptr<Element> is_from(Class<std::unique_ptr<Element>> &&);
 

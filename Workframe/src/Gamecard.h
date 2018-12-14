@@ -15,6 +15,9 @@ namespace game {
 
 class Card final: protected base::Ensemble {
 	base::Primitive<bool> covered;
+	static const std::string cover;
+	static const std::string face;
+	static const std::string card;
 
 	Element& operator [](base::Primitive<bool>) const;
 protected:

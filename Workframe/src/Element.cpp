@@ -21,8 +21,7 @@ std::ostringstream print_element__instant_(const Element::Instant& object) {
 	return result;
 }
 Class<Element::Instant> Element::exists_from(const Log* caller) const {
-	return Method::return_class(Instant(creation), *this,
-			__func__, caller);
+	return Method::return_class(Instant(creation), *this, __func__, caller);
 }
 void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
@@ -44,7 +43,7 @@ template<> std::function<std::ostringstream(const std::set<Element*>&)> Class<
 		std::set<Element*>>::printer = print_std__set<Element*>;
 Class<std::set<Element*>> Element::give_everything(const Log* caller) {
 	return Method::return_class(std::forward<std::set<Element*>>(everything),
-			make_scopes(__func__, "base", typeid(Element).name()), caller);
+			make_scopes(BASE, __func__, TYPEID(Element)), caller);
 }
 
 std::ostringstream print_modifications(const Element::Modifications& object) {
@@ -94,65 +93,66 @@ Class<Element::Modifications> Element::gives_modifications(const Log* caller) {
 }
 
 Element::Element(std::string label, const Log* caller, Fields attributes) :
-		Object(caller, label), Log(caller, label, false) {
-	as_constructor<false>("base", __func__, caller, attributes);
-	modification = creation = std::chrono::system_clock::now();
-	position = nullptr;
-	this->attributes = attributes.is();
-	everything.emplace(this);
-}
-Element::~Element() {
-	as_destructor("base", __func__);
-	if (is_running())
-		everything.erase(this);
-}
-Element::Element(Element&& moving) :
-		Object(std::move(moving)), Log(std::move(moving)) {
-	creation = moving.creation;
-	modification = moving.modification;
-	position = moving.position;
-	attributes = moving.attributes;
-	last_attributes = moving.last_attributes;
-}
+		NEW_LOG(caller, label, false) {
+			as_constructor<false>(BASE, __func__, caller, attributes);
+			modification = creation = std::chrono::system_clock::now();
+			position = nullptr;
+			this->attributes = attributes.is();
+			everything.emplace(this);
+		}
+		Element::~Element() {
+			as_destructor(BASE, __func__);
+			if (is_running())
+			everything.erase(this);
+		}
+		Element::Element(Element&& moving) :
+		ASSIGN_LOG(std::move(moving)) {
+			creation = moving.creation;
+			modification = moving.modification;
+			position = moving.position;
+			attributes = moving.attributes;
+			last_attributes = moving.last_attributes;
+		}
 
 //Class<std::unique_ptr<Element>>
-std::unique_ptr<Element> Class<std::unique_ptr<Element>>::is_from(
-		Unique_ptr&& instance) {
-	return std::move(instance.value);
-}
-std::ostringstream Class<std::unique_ptr<Element>>::prints() const {
-	std::ostringstream result;
+		std::unique_ptr<Element> Class<std::unique_ptr<Element>>::is_from(
+				Unique_ptr&& instance) {
+			return std::move(instance.value);
+		}
+		std::ostringstream Class<std::unique_ptr<Element>>::prints() const {
+			std::ostringstream result;
 
-	result << value.get();
+			result << value.get();
 
-	return result;
-}
-const Element& Class<std::unique_ptr<Element>>::operator *() const {
-	return *value;
-}
-Element& Class<std::unique_ptr<Element>>::operator *() {
-	return *value;
-}
-const Element* Class<std::unique_ptr<Element>>::operator ->() const {
-	return value.operator ->();
-}
-Element* Class<std::unique_ptr<Element>>::operator ->() {
-	return value.operator ->();
-}
-const Element* Class<std::unique_ptr<Element>>::get() const {
-	return value.get();
-}
-Element* Class<std::unique_ptr<Element>>::get() {
-	return value.get();
-}
+			return result;
+		}
+		const Element& Class<std::unique_ptr<Element>>::operator *() const {
+			return *value;
+		}
+		Element& Class<std::unique_ptr<Element>>::operator *() {
+			return *value;
+		}
+		const Element* Class<std::unique_ptr<Element>>::operator ->() const {
+			return value.operator ->();
+		}
+		Element* Class<std::unique_ptr<Element>>::operator ->() {
+			return value.operator ->();
+		}
+		const Element* Class<std::unique_ptr<Element>>::get() const {
+			return value.get();
+		}
+		Element* Class<std::unique_ptr<Element>>::get() {
+			return value.get();
+		}
 
-Class<std::unique_ptr<Element>>::Class(
-		Class<std::unique_ptr<Element>> && moving) :
-		Object(std::move(moving)), value(std::move(moving.value)) {
+		Class<std::unique_ptr<Element>>::Class(
+				Class<std::unique_ptr<Element>> && moving) :
+		Object(std::move(moving)),
+value(std::move(moving.value)) {
 }
 Class<std::unique_ptr<Element>>& Class<std::unique_ptr<Element>>::operator =(
 		Class<std::unique_ptr<Element>> && assigning) {
-	Object::operator =(assigning);
+	Object::operator =(std::forward<Object&&>(assigning));
 	value.reset(assigning.value.release());
 
 	return *this;
@@ -198,7 +198,7 @@ std::domain_error throw_not_root(const Element& instance, const Log& log) {
 }
 
 Element& Ensemble::operator [](Primitive<size_t> position) const {
-	auto log = as_binary("[]", position, nullptr, typeid(Element&));
+	auto log = as_binary(__func__, position, nullptr, typeid(Element&));
 	auto current = localizes(position, &log);
 
 	if (current == container.end())
@@ -214,7 +214,7 @@ Class<std::map<size_t, Element*>> Ensemble::operator [](
 		Class<std::string> name) const {
 	std::map<size_t, Element*> result;
 	using Result = Class<decltype(result)>;
-	auto log = as_binary("[]", name, nullptr, typeid(Result));
+	auto log = as_binary(__func__, name, nullptr, typeid(Result));
 	size_t position = 0;
 	auto current = container.begin();
 
@@ -312,8 +312,8 @@ void Ensemble::self_clears(const Log* caller) {
 	is_modified(&log);
 }
 Unique_ptr Ensemble::pop(Element& instance, const Log* caller) {
-	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
-			true, caller, typeid(Unique_ptr), instance);
+	auto log = as_method(make_scopes(BASE, __func__, TYPEID(Ensemble)), true,
+			caller, typeid(Unique_ptr), instance);
 	Ensemble* ensemble = nullptr;
 	auto current = find(instance, &log);
 
@@ -340,8 +340,8 @@ Unique_ptr Ensemble::pop(Element& instance, const Log* caller) {
 }
 void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
 		Element& instance, const Log* caller) {
-	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
-			true, caller, typeid(void), ensemble, position, instance);
+	auto log = as_method(make_scopes(BASE, __func__, TYPEID(Ensemble)), true,
+			caller, typeid(void), ensemble, position, instance);
 	auto current = localize(instance, &log).is();
 
 	if (ensemble)
@@ -361,9 +361,8 @@ template<> std::function<
 		print_std__tuple_Ensemble__size_t__std__string__;
 Class<std::tuple<Ensemble*, size_t, std::string>> Ensemble::localize(
 		const Element& instance, const Log* caller) {
-	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
-			true, caller,
-			typeid(Class<std::tuple<Ensemble*, size_t, std::string>> ),
+	auto log = as_method(make_scopes(BASE, __func__, TYPEID(Ensemble)), true,
+			caller, typeid(Class<std::tuple<Ensemble*, size_t, std::string>> ),
 			instance);
 	auto ensemble = dynamic_cast<Ensemble*>(instance.position);
 	std::string name;
@@ -398,8 +397,8 @@ Class<std::vector<std::string>> Ensemble::have_path(const Element& instance,
 		const Log* caller) {
 	std::vector<std::string> result;
 	using Result = Class<decltype(result)>;
-	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
-			true, caller, typeid(Result), instance);
+	auto log = as_method(make_scopes(BASE, __func__, TYPEID(Ensemble)), true,
+			caller, typeid(Result), instance);
 	auto current = localize(instance, &log).is();
 
 	if (std::get<0>(current)) {
@@ -523,8 +522,8 @@ template<> std::function<
 		unprint_std__pair_first<Ensemble*, Ensemble::Container::iterator>;
 std::pair<Ensemble*, Ensemble::Container::iterator> Ensemble::find(
 		Element& instance, const Log* caller) {
-	auto log = as_method(make_scopes(__func__, "base", typeid(Ensemble).name()),
-			true, caller, typeid(std::pair<Ensemble*, Container::iterator>),
+	auto log = as_method(make_scopes(BASE, __func__, TYPEID(Ensemble)), true,
+			caller, typeid(std::pair<Ensemble*, Container::iterator>),
 			instance);
 	Container::iterator current;
 	auto ensemble = dynamic_cast<Ensemble*>(instance.position);
@@ -544,12 +543,11 @@ std::pair<Ensemble*, Ensemble::Container::iterator> Ensemble::find(
 }
 
 Ensemble::Ensemble(std::string label, const Log* caller, Fields attributes) :
-		Object(caller, label), Log(caller, label, false), Element(label, caller,
-				attributes) {
-	as_constructor<false>("base", __func__, caller, attributes);
+		NEW_LOG(caller, __func__, false), Element(label, caller, attributes) {
+	as_constructor<false>(BASE, __func__, caller, attributes);
 }
 Ensemble::~Ensemble() {
-	as_destructor("base", __func__);
+	as_destructor(BASE, __func__);
 }
 
 } /* namespace base */

@@ -10,8 +10,6 @@
 
 namespace base {
 
-#define OBJECT(caller) Object(caller, __func__)
-
 bool run = true;
 bool is_running() {
 	return run;
@@ -20,7 +18,7 @@ void ends_run() {
 	run = false;
 }
 std::string give_substring_after(std::string string, const std::string match,
-		bool from_end = false, size_t number) {
+		bool from_end = false, int number) {
 	auto position = from_end ? string.rfind(match) : string.find(match);
 	auto after = position + match.length();
 	auto rest = string.substr(after);
@@ -33,7 +31,8 @@ std::string give_substring_after(std::string string, const std::string match,
 	else if (number > 1)
 		return give_substring_after(rest, match, from_end, --number);
 	else if (number < -1)
-		return string.substr(0, after) + give_substring_after(rest, match, from_end, ++number);
+		return string.substr(0, after)
+				+ give_substring_after(rest, match, from_end, ++number);
 	else
 		return string;
 }
@@ -50,30 +49,41 @@ const std::string& Object::has_label() const {
 const std::string& Object::has_logger() const {
 	return logger;
 }
-std::string Object::make_track(const Object* caller) {
-	std::string result;
-
-	if (caller)
-		result = caller->logger + ".";
-
-	return result + std::to_string(++tracker);
+void Object::makes_track(const Object* caller) {
+	if (caller && !caller->logger.empty())
+		logger = caller->logger + ".";
 }
-
-Object::Object(const Object* caller, std::string label) {
+void Object::makes_track(std::string logger) {
+	if (!logger.empty())
+		try {
+			this->logger = give_substring_after(logger, ".", true, -1) + ".";
+		} catch (...) {
+			this->logger = logger + ".";
+		}
+}
+void Object::constructs(std::string label) {
 	this->label = label;
-	logger = make_track(caller);
+	logger += std::to_string(track = ++tracker);
 }
-Object::Object(const Object& copy) {
-	label = copy.label;
-	logger = make_track(give_substring_after(copy.logger, ".", true));
-}
-Object::Object(Object&& moving) {
+void Object::becomes(Object&& moving) {
+	track = moving.track;
 	label = moving.label;
 	logger = moving.logger;
 }
+
+Object::Object(const Object* caller, std::string label) {
+	makes_track(caller);
+	constructs(label);
+}
+Object::Object(const Object& copy) {
+	makes_track(copy.logger);
+	constructs(copy.label);
+}
+Object::Object(Object&& moving) {
+	becomes(std::forward<Object&&>(moving));
+}
 Object& Object::operator =(Object&& assigning) {
-	label = assigning.label;
-	logger = assigning.logger;
+	becomes(std::forward<Object&&>(assigning));
 
 	return *this;
 }
@@ -84,13 +94,12 @@ std::ostringstream Log::log_arguments() {
 }
 void Log::log(std::string logger, std::string function, bool open,
 		const Object* returning) {
-	logger += ": "
-			+ (returning ?
-					(open ? "  }=" : function + "=")
-							+ returning->prints().str() :
-					function + (open ? " {" : ""));
-
-	std::clog << logger << std::endl;
+	std::clog
+			<< logger + ": "
+					+ (returning ?
+							(open ? "  }=" : function + "=")
+									+ returning->prints().str() :
+							function + (open ? " {" : "")) << std::endl;
 }
 void Log::log_unary(const Log& logging, std::type_index type,
 		const Object& operand, const Object* returning) {
@@ -167,7 +176,6 @@ Log Log::as_binary(const Object& lefthand, std::string operation,
 
 Log::Log(const Log* caller, std::string label, bool open) :
 		Object(caller, label) {
-	track = std::stoull(give_substring_after(has_logger(), ".", true, 0));
 	this->open = open;
 }
 Log::~Log() {
@@ -176,13 +184,11 @@ Log::~Log() {
 }
 Log::Log(Log&& moving) :
 		Object(std::forward<Log&&>(moving)) {
-	track = moving.track;
 	open = moving.open;
 	moving.open = false;
 }
 Log& Log::operator =(Log&& moving) {
-	Object::operator =(moving);
-	track = moving.track;
+	Object::operator =(std::forward<Log&&>(moving));
 	open = moving.open;
 	moving.open = false;
 
@@ -209,10 +215,6 @@ Primitive<const char*>::Primitive(const Primitive<const char*>& copy) :
 		Object(copy) {
 	value = copy.value;
 }
-/*Primitive<const char*>::Primitive(Primitive<const char*> && moving) :
- Object(std::move(moving)) {
- value = moving.value;
- }*/
 Primitive<const char*>& Primitive<const char*>::operator =(
 		Primitive<const char*> && moving) {
 	value = moving.value;
