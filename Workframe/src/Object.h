@@ -94,12 +94,12 @@ public:
 	}
 	std::string logs_error(std::ostringstream) const;
 	virtual std::ostringstream prints() const;
-	static Log as_unary(std::string, const Object&, const Log* = nullptr, bool =
-			true, std::type_index = typeid(void));
-	static Log as_unary(const Object&, std::string, const Log* = nullptr, bool =
-			true, std::type_index = typeid(void));
-	static Log as_binary(const Object&, std::string, const Object&, const Log* =
-			nullptr, bool = true, std::type_index = typeid(void));
+	static Log as_unary(std::string, const Object&, bool = true,
+			std::type_index = typeid(void));
+	static Log as_unary(const Object&, std::string, bool = true,
+			std::type_index = typeid(void));
+	static Log as_binary(const Object&, std::string, const Object&, bool = true,
+			std::type_index = typeid(void));
 	template<typename ... Arguments> static Log as_function(std::string label,
 			bool open = true, const Log* caller = nullptr,
 			std::type_index returning_type = typeid(void),
@@ -118,20 +118,17 @@ public:
 	Log& operator =(Log&&);
 protected:
 	template<bool Open = true> Log as_unary(std::string operation,
-			const Log* caller = nullptr, std::type_index returning_type =
-					typeid(void)) const {
-		return as_unary(operation, *this, caller, Open, returning_type);
-	}
-	template<bool Open = true> Log as_unary(const Log* caller,
-			std::string operation,
 			std::type_index returning_type = typeid(void)) const {
-		return as_unary(*this, operation, caller, Open, returning_type);
+		return as_unary(operation, *this, Open, returning_type);
+	}
+	template<bool Open = true> Log as_unary(std::type_index returning_type,
+			std::string operation) const {
+		return as_unary(*this, operation, Open, returning_type);
 	}
 	template<bool Open = true> Log as_binary(std::string operation,
-			const Object& righthand, const Log* caller = nullptr,
-			std::type_index returning_type = typeid(void)) const {
-		return as_binary(*this, operation, righthand, caller, Open,
-				returning_type);
+			const Object& righthand, std::type_index returning_type =
+					typeid(void)) const {
+		return as_binary(*this, operation, righthand, Open, returning_type);
 	}
 	template<bool Open = true, typename ... Arguments> Log as_method(
 			std::string label, const Log* caller = nullptr,
@@ -180,6 +177,235 @@ protected:
 template<typename Type> class Primitive final: public Object {
 	Type value;
 public:
+	template<typename Operand> Primitive<Type>& operator +=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value += (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type>& operator -=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value -= (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type>& operator *=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value *= (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type>& operator /=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value /= (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type>& operator %=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value %= (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type>& operator &=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value &= (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type>& operator |=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value |= (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type>& operator ^=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		value ^= (Type) operand.value;
+
+		return log.returns(*this);
+	}
+	Primitive<Type>& operator ++() {
+		auto log = Log::as_unary(__func__, *this, true, typeid(*this));
+
+		++value;
+
+		return log.returns(*this);
+	}
+	Primitive<Type> operator ++(int) {
+		auto log = Log::as_unary(*this, __func__, true, typeid(*this));
+
+		return log.returns(Primitive<Type>(++value, &log));
+	}
+	Primitive<Type>& operator --() {
+		auto log = Log::as_unary(__func__, *this, true, typeid(*this));
+
+		--value;
+
+		return log.returns(*this);
+	}
+	Primitive<Type> operator --(int) {
+		auto log = Log::as_unary(*this, __func__, true, typeid(*this));
+
+		return log.returns(Primitive<Type>(--value, &log));
+	}
+	Primitive<Type> operator +() {
+		return Log::as_unary(__func__, *this, false, typeid(*this)).returns(
+				*this);
+	}
+	Primitive<Type> operator -() {
+		auto log = Log::as_unary(__func__, *this, true, typeid(*this));
+
+		return log.returns(Primitive<Type>(-value, &log));
+	}
+	template<typename Operand> Primitive<Type> operator +(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value + (Type) operand.value, &log));
+	}
+	template<typename Operand> Primitive<Type> operator -(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value - (Type) operand.value, &log));
+	}
+	template<typename Operand> Primitive<Type> operator *(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value * (Type) operand.value, &log));
+	}
+	template<typename Operand> Primitive<Type> operator /(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value / (Type) operand.value, &log));
+	}
+	template<typename Operand> Primitive<Type> operator %(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value % (Type) operand.value, &log));
+	}
+	Primitive<Type>& operator ~() {
+		auto log = Log::as_unary(__func__, *this, true, typeid(*this));
+
+		value = -value;
+
+		return log.returns(*this);
+	}
+	template<typename Operand> Primitive<Type> operator &(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value & (Type) operand.value, &log));
+	}
+	template<typename Operand> Primitive<Type> operator |(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value | (Type) operand.value, &log));
+	}
+	template<typename Operand> Primitive<Type> operator ^(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(*this));
+
+		return log.returns(Primitive<Type>(value ^ (Type) operand.value, &log));
+	}
+	Primitive<Type> operator !() {
+		auto log = Log::as_unary(__func__, *this, true, typeid(*this));
+
+		return log.returns(Primitive<Type>(-value));
+	}
+	template<typename Operand> Primitive<bool> operator &&(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value && operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator ||(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value || operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator ==(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value == operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator !=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value != operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator <(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value < operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator >(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value > operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator <=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value <= operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator >=(
+			Primitive<Operand> operand) {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value >= operand.value, &log));
+	}
 	operator Type() const {
 		return value;
 	}
@@ -236,6 +462,20 @@ public:
 	Type&& becomes() {
 		return std::move(value);
 	}
+	template<typename Operand> Primitive<bool> operator ==(
+			Class<Operand> operand) const {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value == operand.value, &log));
+	}
+	template<typename Operand> Primitive<bool> operator !=(
+			Class<Operand> operand) const {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value != operand.value, &log));
+	}
 	virtual std::ostringstream prints() const {
 		return printer(value);
 	}
@@ -269,6 +509,18 @@ public:
 	const std::string& is() const;
 	std::string& is();
 	std::string&& becomes();
+	Primitive<bool> operator ==(Class<std::string> operand) const {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value == operand.value, &log));
+	}
+	Primitive<bool> operator !=(Class<std::string> operand) const {
+		auto log = Log::as_binary(*this, __func__, operand, true,
+				typeid(Primitive<bool> ));
+
+		return log.returns(Primitive<bool>(value != operand.value, &log));
+	}
 	virtual std::ostringstream prints() const;
 
 	Class(std::string, const Log* = nullptr);
@@ -278,45 +530,39 @@ public:
 };
 
 template<typename Type> Primitive<Type> unary_primitive(std::string operation,
-		const Object& object, Type returning, const Log* caller = nullptr) {
-	auto log = Log::as_unary(operation, object, caller, false,
-			typeid(returning));
+		const Object& object, Type returning) {
+	auto log = Log::as_unary(operation, object, false, typeid(returning));
 
 	return log.returns(Class<Type>(returning, &log));
 }
 template<typename Type> Class<Type> unary_class(std::string operation,
-		const Object& object, Type&& returning, const Log* caller = nullptr) {
-	auto log = Log::as_unary(operation, object, caller, false,
-			typeid(returning));
+		const Object& object, Type&& returning) {
+	auto log = Log::as_unary(operation, object, false, typeid(returning));
 
 	return log.returns(Class<Type>(returning, &log));
 }
 template<typename Type> Primitive<Type> unary_primitive(const Object& object,
-		std::string operation, Type returning, const Log* caller = nullptr) {
-	auto log = Log::as_unary(object, operation, caller, false,
-			typeid(returning));
+		std::string operation, Type returning) {
+	auto log = Log::as_unary(object, operation, false, typeid(returning));
 
 	return log.returns(Primitive<Type>(returning, &log));
 }
 template<typename Type> Class<Type> unary_class(const Object& object,
-		std::string operation, Type&& returning, const Log* caller = nullptr) {
-	auto log = Log::as_unary(object, operation, caller, false,
-			typeid(returning));
+		std::string operation, Type&& returning) {
+	auto log = Log::as_unary(object, operation, false, typeid(returning));
 
 	return log.returns(Class<Type>(returning, &log));
 }
 template<typename Type> Primitive<Type> binary_primitive(const Object& lefthand,
-		std::string operation, const Object& righthand, Type returning,
-		const Log* caller = nullptr) {
-	auto log = Log::as_binary(lefthand, operation, righthand, caller, false,
+		std::string operation, const Object& righthand, Type returning) {
+	auto log = Log::as_binary(lefthand, operation, righthand, false,
 			typeid(returning));
 
 	return log.returns(Primitive<Type>(returning, &log));
 }
 template<typename Type> Class<Type> binary_class(const Object& lefthand,
-		std::string operation, const Object& righthand, Type&& returning,
-		const Log* caller = nullptr) {
-	auto log = Log::as_binary(lefthand, operation, righthand, caller, false,
+		std::string operation, const Object& righthand, Type&& returning) {
+	auto log = Log::as_binary(lefthand, operation, righthand, false,
 			typeid(returning));
 
 	return log.returns(Class<Type>(returning, &log));
