@@ -16,7 +16,7 @@ const std::string Card::face = "face";
 const std::string Card::card = "card";
 
 base::Element& Card::operator [](base::Primitive<bool> cover) const {
-	return as_binary(__func__, cover, nullptr, typeid(Element&)).returns(
+	return as_binary(__func__, cover, typeid(Element&)).returns(
 			Ensemble::operator [](cover ? 0 : 1));
 }
 base::Element& Card::operator ()(const Log* caller) const {

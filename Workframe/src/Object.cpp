@@ -148,26 +148,25 @@ std::ostringstream Log::prints() const {
 
 	return result;
 }
-Log Log::as_unary(std::string operation, const Object& object,
-		const Log* caller, bool open, std::type_index type) {
-	Log result(caller, operation, open);
+Log Log::as_unary(std::string operation, const Object& object, bool open,
+		std::type_index type) {
+	Log result(nullptr, operation, open);
 
 	log_unary(result, type, object, nullptr);
 
 	return result;
 }
-Log Log::as_unary(const Object& object, std::string operation,
-		const Log* caller, bool open, std::type_index type) {
-	Log result(caller, operation, open);
+Log Log::as_unary(const Object& object, std::string operation, bool open,
+		std::type_index type) {
+	Log result(nullptr, operation, open);
 
 	log_unary(object, result, type, nullptr);
 
 	return result;
 }
 Log Log::as_binary(const Object& lefthand, std::string operation,
-		const Object& righthand, const Log* caller, bool open,
-		std::type_index type) {
-	Log result(caller, operation, open);
+		const Object& righthand, bool open, std::type_index type) {
+	Log result(nullptr, operation, open);
 
 	log_binary(result, type, lefthand, righthand, nullptr);
 

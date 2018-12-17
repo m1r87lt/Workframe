@@ -198,7 +198,7 @@ std::domain_error throw_not_root(const Element& instance, const Log& log) {
 }
 
 Element& Ensemble::operator [](Primitive<size_t> position) const {
-	auto log = as_binary(__func__, position, nullptr, typeid(Element&));
+	auto log = as_binary(__func__, position, typeid(Element&));
 	auto current = localizes(position, &log);
 
 	if (current == container.end())
@@ -214,7 +214,7 @@ Class<std::map<size_t, Element*>> Ensemble::operator [](
 		Class<std::string> name) const {
 	std::map<size_t, Element*> result;
 	using Result = Class<decltype(result)>;
-	auto log = as_binary(__func__, name, nullptr, typeid(Result));
+	auto log = as_binary(__func__, name, typeid(Result));
 	size_t position = 0;
 	auto current = container.begin();
 
