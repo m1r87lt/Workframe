@@ -20,6 +20,8 @@ std::ostringstream print_element__instant_(const Element::Instant& object) {
 
 	return result;
 }
+template<> std::function<std::ostringstream(const Element::Instant&)> Class<
+		Element::Instant>::printer = print_element__instant_;
 Class<Element::Instant> Element::exists_from(const Log* caller) const {
 	return Method::return_class(Instant(creation), *this, __func__, caller);
 }
@@ -27,8 +29,12 @@ void Element::is_modified(const Log* caller) {
 	as_method<false>(__func__, caller);
 	modification = std::chrono::system_clock::now();
 }
-Class<std::map<std::string, std::string>> Element::gives_attributes(
-		const Log* caller) const {
+
+template<> std::function<
+		std::ostringstream(const std::map<std::string, std::string>&)> Class<
+		std::map<std::string, std::string>>::printer = print_std__map<
+		std::string, std::string>;
+Fields Element::gives_attributes(const Log* caller) const {
 	return Method::return_class(attributes, *this, __func__, caller);
 }
 void Element::gets_attributes(Fields attributes, const Log* caller) {
@@ -391,6 +397,7 @@ Class<std::tuple<Ensemble*, size_t, std::string>> Ensemble::localize(
 			Class<std::tuple<Ensemble*, size_t, std::string>>(
 					std::make_tuple(ensemble, position, name), &log));
 }
+
 template<> std::function<std::ostringstream(const std::vector<std::string>&)> Class<
 		std::vector<std::string>>::printer = print_std__vector<std::string>;
 Class<std::vector<std::string>> Ensemble::have_path(const Element& instance,
@@ -452,6 +459,7 @@ bool Ensemble::names(std::string name, std::string candidate,
 						std::ostringstream(
 								"ERROR: " + evaluated.prints().str() + ".")));
 }
+
 template<> std::function<
 		std::ostringstream(const Ensemble::Container::iterator&)> Class<
 		Ensemble::Container::iterator>::printer = unprint<
@@ -474,6 +482,7 @@ Ensemble::Container::iterator Ensemble::localizes(size_t position,
 
 	return log.returns(Class<decltype(result)>(std::move(result), &log)).becomes();
 }
+
 template<> std::function<
 		std::ostringstream(
 				const std::pair<size_t, Ensemble::Container::iterator>&)> Class<
@@ -495,9 +504,10 @@ std::pair<size_t, Ensemble::Container::iterator> Ensemble::localizes(
 			Class<std::pair<size_t, Container::iterator>>(
 					std::make_pair(result < size ? result : 0, current), &log)).becomes();
 }
+
 std::unique_ptr<Element> Ensemble::gives(Container::iterator position,
 		const Log* caller) {
-	Class<Container::iterator&> iterator(position, caller);
+	Class<Container::iterator> iterator(Container::iterator(position), caller);
 	using Result = std::unique_ptr<Element>;
 	auto log = as_method(__func__, caller, typeid(Result), iterator);
 	Result result;
@@ -515,6 +525,7 @@ std::unique_ptr<Element> Ensemble::gives(Container::iterator position,
 
 	return Unique_ptr::is_from(log.returns(Unique_ptr(std::move(result), &log)));
 }
+
 template<> std::function<
 		std::ostringstream(
 				const std::pair<Ensemble*, Ensemble::Container::iterator>&)> Class<
