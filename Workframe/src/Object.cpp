@@ -7,6 +7,7 @@
 
 #include "Object.h"
 #include <iostream>
+#include <cstring>
 
 namespace base {
 
@@ -212,11 +213,15 @@ Primitive<const char*>::Primitive(const char* value, const Log* caller) :
 }
 Primitive<const char*>::Primitive(const Primitive<const char*>& copy) :
 		Object(copy) {
-	value = copy.value;
+	delete value;
+	const_cast<char*&>(value) = new char[strlen(copy.value)];
+	strcpy(const_cast<char*&>(value), copy.value);
 }
 Primitive<const char*>& Primitive<const char*>::operator =(
-		Primitive<const char*> && moving) {
-	value = moving.value;
+		const Primitive<const char*> & copy) {
+	delete value;
+	const_cast<char*&>(value) = new char[strlen(copy.value)];
+	strcpy(const_cast<char*&>(value), copy.value);
 
 	return *this;
 }
@@ -248,13 +253,9 @@ Class<std::string>::Class(std::string value, const Log* caller) :
 		Object(caller, value) {
 	this->value = value;
 }
-Class<std::string>::Class(const Class<std::string>& copy) :
-		Object(copy) {
+Class<std::string>& Class<std::string>::operator =(
+		const Class<std::string>& copy) {
 	value = copy.value;
-}
-Class<std::string> Class<std::string>::operator =(
-		Class<std::string> && moving) {
-	value = moving.value;
 
 	return *this;
 }

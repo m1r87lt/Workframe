@@ -421,15 +421,14 @@ public:
 			Object(caller, typeid(Type).name()) {
 		this->value = value;
 	}
-	Primitive(const Primitive<Type>& copy) :
-			Object(copy) {
+	Primitive(const Primitive<Type>& copy) = default;
+	Primitive<Type>& operator =(const Primitive<Type> & copy) {
 		value = copy.value;
-	}
-	Primitive<Type>& operator =(Primitive<Type> && moving) {
-		value = moving.value;
 
 		return *this;
 	}
+	Primitive(Primitive<Type> &&) = default;
+	Primitive<Type>& operator =(Primitive<Type> &&) = default;
 	Primitive<Type>& operator =(Type value) {
 		this->value = value;
 
@@ -444,7 +443,9 @@ public:
 
 	Primitive(const char*, const Log* = nullptr);
 	Primitive(const Primitive<const char*>&);
-	Primitive<const char*>& operator =(Primitive<const char*> &&);
+	Primitive<const char*>& operator =(const Primitive<const char*> &);
+	Primitive(Primitive<const char*> &&) = default;
+	Primitive<const char*>& operator =(Primitive<const char*> &&) = default;
 	Primitive<const char*>& operator =(const char*);
 };
 
@@ -485,14 +486,14 @@ public:
 			Object(caller, typeid(Type).name()), value(
 					std::forward<Arguments&&>(arguments) ...) {
 	}
-	Class(const Class<Type>& copy) :
-			Object(copy), value(copy.value) {
-	}
-	Class<Type>& operator =(Class<Type> && moving) {
-		value = std::move(moving.value);
+	Class(const Class<Type>& copy) = default;
+	Class<Type>& operator =(const Class<Type>& copy) {
+		value = copy.value;
 
 		return *this;
 	}
+	Class(Class<Type> &&) = default;
+	Class<Type>& operator =(Class<Type> && moving) = default;
 	Class(Type&& object, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()), value(
 					std::forward<Type>(object)) {
@@ -524,8 +525,10 @@ public:
 	virtual std::ostringstream prints() const;
 
 	Class(std::string, const Log* = nullptr);
-	Class(const Class<std::string>&);
-	Class<std::string> operator =(Class<std::string> &&);
+	Class(const Class<std::string>&) = default;
+	Class<std::string>& operator =(const Class<std::string>&);
+	Class(Class<std::string> &&) = default;
+	Class<std::string>& operator =(Class<std::string> &&) = default;
 	Class<std::string>& operator =(std::string);
 };
 
