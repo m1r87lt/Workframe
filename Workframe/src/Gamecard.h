@@ -13,7 +13,7 @@
 
 namespace game {
 
-class Card final: protected base::Ensemble {
+class Card final: private base::Ensemble {
 	base::Primitive<bool> covered;
 	static const std::string cover;
 	static const std::string face;
@@ -59,7 +59,7 @@ public:
 
 namespace game {
 
-class Deck final: protected base::Ensemble {
+class Deck final: private base::Ensemble {
 	base::Primitive<bool> covered;
 
 	size_t randomly_gives(base::Primitive<bool>, const Log* = nullptr);
