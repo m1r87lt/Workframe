@@ -553,10 +553,6 @@ std::pair<Ensemble*, Ensemble::Container::iterator> Ensemble::find(
 					std::make_pair(ensemble, current), &log)).becomes();
 }
 
-Ensemble::Ensemble() :
-		NEW_LOG(nullptr, __func__, false), Element(TYPEID(Ensemble)) {
-	as_constructor<false>(BASE, __func__);
-}
 Ensemble::Ensemble(std::string label, const Log* caller, Fields attributes) :
 		NEW_LOG(caller, __func__, false), Element(label, caller, attributes) {
 	as_constructor<false>(BASE, __func__, caller, attributes);

@@ -225,11 +225,6 @@ Primitive<const char*>& Primitive<const char*>::operator =(
 
 	return *this;
 }
-Primitive<const char*>& Primitive<const char*>::operator =(const char* value) {
-	this->value = value;
-
-	return *this;
-}
 
 //Class<std::string>
 const std::string& Class<std::string>::is() const {
@@ -240,6 +235,11 @@ std::string& Class<std::string>::is() {
 }
 std::string&& Class<std::string>::becomes() {
 	return std::move(value);
+}
+Class<std::string>& Class<std::string>::operator =(std::string copy) {
+	value = copy;
+
+	return *this;
 }
 std::ostringstream Class<std::string>::prints() const {
 	std::ostringstream result;
@@ -256,11 +256,6 @@ Class<std::string>::Class(std::string value, const Log* caller) :
 Class<std::string>& Class<std::string>::operator =(
 		const Class<std::string>& copy) {
 	value = copy.value;
-
-	return *this;
-}
-Class<std::string>& Class<std::string>::operator =(std::string copy) {
-	value = copy;
 
 	return *this;
 }

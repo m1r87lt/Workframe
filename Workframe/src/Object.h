@@ -409,6 +409,11 @@ public:
 	operator Type() const {
 		return value;
 	}
+	Primitive<Type>& operator =(Type value) {
+		this->value = value;
+
+		return *this;
+	}
 	virtual std::ostringstream prints() const {
 		std::ostringstream result;
 
@@ -429,16 +434,12 @@ public:
 	}
 	Primitive(Primitive<Type> &&) = default;
 	Primitive<Type>& operator =(Primitive<Type> &&) = default;
-	Primitive<Type>& operator =(Type value) {
-		this->value = value;
-
-		return *this;
-	}
 };
 template<> class Primitive<const char*> final: public Object {
 	const char* value;
 public:
 	operator const char*() const;
+	Primitive<const char*>& operator =(const char*);
 	virtual std::ostringstream prints() const;
 
 	Primitive(const char*, const Log* = nullptr);
@@ -446,7 +447,6 @@ public:
 	Primitive<const char*>& operator =(const Primitive<const char*> &);
 	Primitive(Primitive<const char*> &&) = default;
 	Primitive<const char*>& operator =(Primitive<const char*> &&) = default;
-	Primitive<const char*>& operator =(const char*);
 };
 
 template<typename Type> class Class final: public Object {
@@ -477,6 +477,11 @@ public:
 
 		return log.returns(Primitive<bool>(value != operand.value, &log));
 	}
+	Class<Type>& operator =(Type&& object) {
+		value = std::forward<Type>(object);
+
+		return *this;
+	}
 	virtual std::ostringstream prints() const {
 		return printer(value);
 	}
@@ -486,6 +491,10 @@ public:
 			Object(caller, typeid(Type).name()), value(
 					std::forward<Arguments&&>(arguments) ...) {
 	}
+	Class(Type&& object, const Log* caller = nullptr) :
+			Object(caller, typeid(Type).name()), value(
+					std::forward<Type>(object)) {
+	}
 	Class(const Class<Type>& copy) = default;
 	Class<Type>& operator =(const Class<Type>& copy) {
 		value = copy.value;
@@ -494,15 +503,6 @@ public:
 	}
 	Class(Class<Type> &&) = default;
 	Class<Type>& operator =(Class<Type> && moving) = default;
-	Class(Type&& object, const Log* caller = nullptr) :
-			Object(caller, typeid(Type).name()), value(
-					std::forward<Type>(object)) {
-	}
-	Class<Type>& operator =(Type&& object) {
-		value = std::forward<Type>(object);
-
-		return *this;
-	}
 };
 template<> class Class<std::string> final: public Object {
 	std::string value;
@@ -522,6 +522,7 @@ public:
 
 		return log.returns(Primitive<bool>(value != operand.value, &log));
 	}
+	Class<std::string>& operator =(std::string);
 	virtual std::ostringstream prints() const;
 
 	Class(std::string, const Log* = nullptr);
@@ -529,7 +530,6 @@ public:
 	Class<std::string>& operator =(const Class<std::string>&);
 	Class(Class<std::string> &&) = default;
 	Class<std::string>& operator =(Class<std::string> &&) = default;
-	Class<std::string>& operator =(std::string);
 };
 
 template<typename Type> Primitive<Type> unary_primitive(std::string operation,
