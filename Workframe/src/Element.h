@@ -247,7 +247,7 @@ struct Ensemble: public Element {
 	Primitive<size_t> has_size(const Log* = nullptr) const;
 	void self_clears(const Log* = nullptr);
 	template<typename Type, typename ... Arguments> void generates(
-			Class<std::string> name, Primitive<size_t> position = 0,
+			Class<std::string> name, Primitive<size_t> position = 1,
 			const Log* caller = nullptr, Arguments&& ... arguments) {
 		auto log = as_method(__func__, caller, typeid(void), name, position,
 				arguments ...);

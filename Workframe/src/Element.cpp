@@ -278,7 +278,7 @@ void Ensemble::gets(Class<std::string> name, Unique_ptr && instance,
 		throw throw_null_invalid_argument(instance, log);
 }
 void Ensemble::takes(Primitive<Ensemble*> ensemble, Primitive<size_t> source,
-		Primitive<size_t> destination = 0, const Log* caller) {
+		Primitive<size_t> destination = 1, const Log* caller) {
 	auto log = as_method(__func__, caller, typeid(void), ensemble, source,
 			destination);
 	Ensemble* giver = ensemble;
