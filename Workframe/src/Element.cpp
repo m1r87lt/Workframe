@@ -358,8 +358,9 @@ void Ensemble::take(Primitive<Ensemble*> ensemble, Primitive<size_t> position,
 
 std::ostringstream print_std__tuple_Ensemble__size_t__std__string__(
 		const std::tuple<Ensemble*, size_t, std::string>& position) {
-	return Container_Printer(std::string(), position, "{ ", ": ", ", \"",
-			"\" }")(false);
+	return std::ostringstream(
+			Container_Printer(std::string(), position, "{ ", ": ", ", \"",
+					"\" }")(false).str().substr(1));
 }
 template<> std::function<
 		std::ostringstream(const std::tuple<Ensemble*, size_t, std::string>&)> Class<
