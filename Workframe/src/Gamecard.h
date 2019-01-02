@@ -2,7 +2,7 @@
  * Gamecard.h
  *
  *  Created on: 19 nov 2018
- *      Author: m1rma
+ *      Author: m1r
  */
 
 #ifndef GAMECARD_H_

@@ -2,7 +2,7 @@
  * Element.h
  *
  *  Created on: 7 ott 2018
- *      Author: m1rma
+ *      Author: m1r
  */
 
 #ifndef ELEMENT_H_

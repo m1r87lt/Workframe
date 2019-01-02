@@ -2,7 +2,7 @@
  * Gamecard.cpp
  *
  *  Created on: 19 nov 2018
- *      Author: m1rma
+ *      Author: m1r
  */
 
 #include "Gamecard.h"
