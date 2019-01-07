@@ -34,9 +34,7 @@ class Container_Printer {
 	std::string text;
 	std::list<std::string> separator_list;
 
-	std::list<std::string> static prepare_separators() {
-		return std::list<std::string>();
-	}
+	std::list<std::string> static prepare_separators();
 	template<typename ... Separators> static std::list<std::string> prepare_separators(
 			std::string separator, Separators&& ... separators) {
 		auto result = prepare_separators(separators ...);
@@ -141,6 +139,7 @@ template<typename Type> std::ostringstream print_std__set(
 		const std::set<Type>& set) {
 	return Container_Printer(set, "\t{", "}")();
 }
+
 struct Element: virtual public Log {
 	using Instant = std::chrono::system_clock::time_point;
 	using Modifications = std::map<std::string, std::pair<std::string, std::string>>;
@@ -152,7 +151,7 @@ struct Element: virtual public Log {
 	void gets_attributes(Fields, const Log* = nullptr);
 	Class<Modifications> gives_modifications(const Log* = nullptr);
 	static Class<std::set<Element*>> give_everything(const Log* = nullptr);
-
+	friend class Ensemble;
 	virtual ~Element();
 private:
 	Instant creation;
@@ -161,45 +160,65 @@ private:
 	std::map<std::string, std::string> attributes;
 	std::map<std::string, std::string> last_attributes;
 	static std::set<Element*> everything;
-	friend class Ensemble;
 protected:
 	Element(std::string, const Log* = nullptr, Fields = nullptr);
 	Element(Element&&);
 	Element& operator =(Element&&) = delete;
 };
 
-template<> class Class<std::unique_ptr<Element>> : public Object {
-	std::unique_ptr<Element> value;
-	friend class Ensemble;
-	static std::unique_ptr<Element> is_from(Class<std::unique_ptr<Element>> &&);
-
+template<> class Class<std::unique_ptr<Log>> : public Object {
+	std::unique_ptr<Log> value;
+	static std::unique_ptr<Log> is_from(Class<std::unique_ptr<Log>> &&);
+	friend class Class<std::unique_ptr<Element>> ;
 	template<typename Type> Class(Type* object, const Log* caller = nullptr) :
 			Object(caller, typeid(Type).name()), value(object) {
 	}
 public:
+	const Log* operator ->() const;
+	Log* operator ->();
+	const Log* get() const;
+	Log* get();
 	virtual std::ostringstream prints() const;
-	const Element& operator *() const;
-	Element& operator *();
-	const Element* operator ->() const;
-	Element* operator ->();
-	const Element* get() const;
-	Element* get();
+	virtual const Log& operator *() const;
+	virtual Log& operator *();
+	template<typename Type, typename ... Arguments> static Class<
+			std::unique_ptr<Log>> construct(const Log* caller = nullptr,
+			Arguments&& ... arguments) {
+		return Class<std::unique_ptr<Log>>(
+				new Type(std::forward<Arguments&&>(arguments) ...), caller);
+	}
+
+	Class(std::unique_ptr<Log>&&, const Log* = nullptr);
+	Class(const Class<std::unique_ptr<Log>>&) = delete;
+	Class<std::unique_ptr<Log>>& operator =(const Class<std::unique_ptr<Log>>&) = delete;
+	Class(Class<std::unique_ptr<Log>> &&);
+	Class<std::unique_ptr<Log>>& operator =(Class<std::unique_ptr<Log>> &&);
+};
+using Unique_ptr = Class<std::unique_ptr<Log>>;
+template<> class Class<std::unique_ptr<Element>> : public Unique_ptr {
+	static std::unique_ptr<Element> is_from(Class<std::unique_ptr<Element>> &&);
+	friend class Ensemble;
+	Class(Unique_ptr&&);
+	Class(std::unique_ptr<Element> &&, const Log* = nullptr);
+public:
+	virtual const Element& operator *() const;
+	virtual Element& operator *();
+	static Class<std::unique_ptr<Element>> dynamicCast(Unique_ptr&&);
 	template<typename Type, typename ... Arguments> static Class<
 			std::unique_ptr<Element>> construct(const Log* caller = nullptr,
 			Arguments&& ... arguments) {
 		return Class<std::unique_ptr<Element>>(
-				new Type(std::forward<Arguments&&>(arguments) ...), caller);
+				std::unique_ptr<Element>(
+						new Type(std::forward<Arguments&&>(arguments) ...)),
+				caller);
 	}
 
-	Class(std::unique_ptr<Element>&&, const Log* = nullptr);
+	virtual ~Class() = default;
 	Class(const Class<std::unique_ptr<Element>>&) = delete;
-	Class<std::unique_ptr<Element>>& operator =(
-			const Class<std::unique_ptr<Element>>&) = delete;
 	Class(Class<std::unique_ptr<Element>> &&);
 	Class<std::unique_ptr<Element>>& operator =(
-			Class<std::unique_ptr<Element>> &&);
+			const Class<std::unique_ptr<Element>>&) = delete;
 };
-using Unique_ptr = Class<std::unique_ptr<Element>>;
 
 std::string log_out_of_range_0(Primitive<size_t>, Primitive<size_t>, const Log&,
 		bool = true);
@@ -230,6 +249,7 @@ template<typename First, typename Second> std::ostringstream unprint_std__pair_f
 struct Ensemble: public Element {
 	using Content = std::pair<std::string, std::unique_ptr<Element>>;
 	using Container = std::list<Content>;
+	using Unique_ptr = Class<std::unique_ptr<Element>>;
 
 	Element& operator [](Primitive<size_t>) const;
 	Class<std::map<size_t, Element*>> operator [](Class<std::string>) const;
@@ -263,7 +283,7 @@ struct Ensemble: public Element {
 			const Element&, const Log* = nullptr);
 	static Class<std::vector<std::string>> have_path(const Element&,
 			const Log* = nullptr);
-
+	friend Unique_ptr;
 	virtual ~Ensemble();
 	Ensemble(Ensemble&&) = delete;
 private:
@@ -279,7 +299,6 @@ private:
 			nullptr);
 protected:
 	Ensemble(std::string, const Log* = nullptr, Fields = nullptr);
-	friend Unique_ptr;
 };
 
 } /* namespace base */

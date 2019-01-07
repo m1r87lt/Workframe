@@ -44,12 +44,6 @@ std::string make_scopes(std::string scope0, std::string scope1) {
 //Object
 long long unsigned Object::tracker = 0;
 
-const std::string& Object::has_label() const {
-	return label;
-}
-const std::string& Object::has_logger() const {
-	return logger;
-}
 void Object::makes_track(const Object* caller) {
 	if (caller && !caller->logger.empty())
 		logger = caller->logger + ".";
@@ -70,6 +64,13 @@ void Object::becomes(Object&& moving) {
 	track = moving.track;
 	label = moving.label;
 	logger = moving.logger;
+}
+
+const std::string& Object::has_label() const {
+	return label;
+}
+const std::string& Object::has_logger() const {
+	return logger;
 }
 
 Object::Object(const Object* caller, std::string label) {
@@ -130,6 +131,7 @@ void Log::log_return(Log& logging, const Object& returning) {
 			&returning);
 	logging.open = false;
 }
+
 void Log::notes(std::ostringstream message) const {
 	if (open)
 		std::clog << has_logger() << "  " << message.str() << std::endl;
@@ -142,6 +144,7 @@ std::string Log::logs_error(std::ostringstream message) const {
 
 	return result;
 }
+
 std::ostringstream Log::prints() const {
 	std::ostringstream result;
 
@@ -149,6 +152,7 @@ std::ostringstream Log::prints() const {
 
 	return result;
 }
+
 Log Log::as_unary(std::string operation, const Object& object, bool open,
 		std::type_index type) {
 	Log result(nullptr, operation, open);
@@ -178,6 +182,7 @@ Log::Log(const Log* caller, std::string label, bool open) :
 		Object(caller, label) {
 	this->open = open;
 }
+
 Log::~Log() {
 	if (open)
 		std::clog << has_logger() << "  }" << std::endl;
