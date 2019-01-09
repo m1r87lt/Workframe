@@ -253,6 +253,18 @@ struct Ensemble: public Element {
 
 	Element& operator [](Primitive<size_t>) const;
 	Class<std::map<size_t, Element*>> operator [](Class<std::string>) const;
+	template<typename Type> Primitive<unsigned> count(const Log* caller =
+			nullptr) const {
+		auto log = as_method(__func__, caller, typeid(Primitive<unsigned> ));
+		Primitive<unsigned> result(0, &log);
+		auto current = container.begin();
+
+		for (auto end = container.end(); current != end; ++current)
+			if (typeid(*current->second) == typeid(Type))
+				++result;
+
+		return log.returns(result);
+	}
 	Primitive<size_t> which_is(Class<std::string>, const Log* = nullptr) const;
 	Class<std::string> who_is(Primitive<size_t>, const Log* = nullptr) const;
 	Unique_ptr gives(Primitive<size_t>, const Log* = nullptr);
