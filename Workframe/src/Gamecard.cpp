@@ -3,7 +3,7 @@
  *
  *  Created on: 19 nov 2018
  *      Author: m1r
- */
+ *
 
 #include "Gamecard.h"
 
@@ -30,7 +30,7 @@ Class<std::unique_ptr<game::Card>>::Class(game::Deck::Unique_ptr && moving) :
 		Ensemble::Unique_ptr(std::move(moving)) {
 }
 
-} /* namespace base */
+} /* namespace base *
 
 namespace game {
 #define GAME "game"

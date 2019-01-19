@@ -7,7 +7,7 @@
 
 #ifndef GAMECARD_H_
 #define GAMECARD_H_
-
+/*
 #include "Element.h"
 #include <random>
 
@@ -72,7 +72,7 @@ public:
 	~Deck();
 };
 
-} /* namespace game */
+} /* namespace game *
 
 namespace base {
 
