@@ -7,92 +7,68 @@
 
 #ifndef GAMECARD_H_
 #define GAMECARD_H_
-/*
-#include "Element.h"
+
+#include "Existence.h"
 #include <random>
 
 namespace game {
 
-class Card final: private base::Ensemble {
-	base::Primitive<bool> covered;
-	static const std::string cover;
-	static const std::string face;
-	static const std::string card;
+class Card: private base::Ensemble {
+	bool covered;
 
-	Element& operator [](base::Primitive<bool>) const;
+	Element& operator [](bool) const;
 protected:
-	Card(Unique_ptr&&, Unique_ptr&&, base::Primitive<bool>,
-			const Log* = nullptr, base::Fields = nullptr);
+	Card(Unique_ptr&&, Unique_ptr&&, bool = true, Fields = Fields());
 	friend class Deck;
-	friend Unique_ptr;
+	friend Ensemble;
 public:
-	Element& operator ()(const Log* = nullptr) const;
-	base::Primitive<bool> is_covered(const Log* = nullptr) const;
+	Element& operator ()() const;
+	bool is_covered() const;
 	void operator ~();
-	void faces(const Log* = nullptr);
-	void covers(const Log* = nullptr);
-	static Unique_ptr construct(Unique_ptr&&, Unique_ptr&&,
-			base::Primitive<bool> = true, const Log* = nullptr, base::Fields =
-					nullptr);
-
-	~Card();
+	void faces();
+	void covers();
+	virtual Fields shows() const;
+	virtual std::string prints() const;
+	static Element* cast(Card*);
+	static Unique_ptr construct(Unique_ptr&&, Unique_ptr&&, bool = true,
+			Fields = Fields());
 };
-class Deck final: private base::Ensemble {
-	base::Primitive<bool> covered;
+class Deck: private base::Ensemble {
+	bool covered;
 
-	size_t randomly_gives(base::Primitive<bool>, const Log* = nullptr);
+	size_t randomly_gives(bool);
 protected:
-	Deck(base::Primitive<bool>, const Log* = nullptr, base::Fields = nullptr);
-	friend Ensemble::Unique_ptr;
+	Deck();
+	Deck(bool, Fields = Fields());
+	friend Ensemble;
 public:
-	using Unique_ptr = base::Class<std::unique_ptr<Card>>;
+	using Card = std::unique_ptr<Card>;
 
-	void generates_over(Ensemble::Unique_ptr&&, Ensemble::Unique_ptr&&,
-			const Log* = nullptr, base::Fields = nullptr);
-	void generates_under(Ensemble::Unique_ptr&&, Ensemble::Unique_ptr&&,
-			const Log* = nullptr, base::Fields = nullptr);
-	void randomly_generates(Ensemble::Unique_ptr&&, Ensemble::Unique_ptr&&,
-			const Log* = nullptr, base::Fields = nullptr);
-	void gets_over(Unique_ptr&&, const Log* = nullptr);
-	void gets_under(Unique_ptr&&, const Log* = nullptr);
-	void randomly_gets(Unique_ptr&&, const Log* = nullptr);
-	Unique_ptr draws_over(const Log* = nullptr);
-	Unique_ptr draws_under(const Log* = nullptr);
-	Unique_ptr randomly_draws(const Log* = nullptr);
-	base::Primitive<size_t> has_size(const Log* = nullptr) const;
-	void self_clears(const Log* = nullptr);
-	void shuffles(const Log* = nullptr);
-	base::Primitive<bool> is_covered(const Log* = nullptr) const;
+	void generates_over(Unique_ptr&&, Unique_ptr&&, Fields = Fields());
+	void generates_under(Unique_ptr&&, Unique_ptr&&, Fields = Fields());
+	void randomly_generates(Unique_ptr&&, Unique_ptr&&, Fields = Fields());
+	void gets_over(Deck::Card&&);
+	void gets_under(Deck::Card&&);
+	void randomly_gets(Deck::Card&&);
+	Deck::Card draws_over();
+	Deck::Card draws_under();
+	Deck::Card randomly_draws();
+	size_t has_size() const;
+	void self_clears();
+	void shuffles();
+	bool is_covered() const;
 	void operator ~();
-	void faces(const Log* = nullptr);
-	void covers(const Log* = nullptr);
-	static Ensemble::Unique_ptr construct(base::Primitive<bool> = true, const Log* =
-			nullptr, base::Fields = nullptr);
-
-	~Deck();
+	void faces();
+	void covers();
+	virtual Fields shows() const;
+	virtual std::string prints() const;
+	static Unique_ptr cast(Deck::Card&&);
+	static Deck::Card cast(Unique_ptr&&);
+	static Element* cast(Deck*);
+	static Unique_ptr construct(bool = true, Fields = Fields());
 };
 
-} /* namespace game *
-
-namespace base {
-
-template<> class Class<std::unique_ptr<game::Card>> : public Ensemble::Unique_ptr {
-	Class(Ensemble::Unique_ptr&&);
-public:
-	static Class<std::unique_ptr<game::Card>> dynamicCast(
-			Ensemble::Unique_ptr&& card);
-	static Class<std::unique_ptr<game::Card>> construct(Ensemble::Unique_ptr&&,
-			Ensemble::Unique_ptr&&, base::Primitive<bool> = true, const Log* =
-					nullptr, base::Fields = nullptr);
-
-	virtual ~Class() = default;
-	Class(const Class<std::unique_ptr<game::Card>>&) = delete;
-	Class(Class<std::unique_ptr<game::Card>> &&);
-	Class<std::unique_ptr<game::Card>>& operator =(
-			const Class<std::unique_ptr<game::Card>>&) = delete;
-};
-
-} /* namespace base */
+} /* namespace game */
 
 #endif /* GAMECARD_H_ */
 

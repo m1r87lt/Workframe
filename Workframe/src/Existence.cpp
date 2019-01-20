@@ -6,7 +6,6 @@
  */
 
 #include "Existence.h"
-#include <iostream>
 
 namespace base {
 //Process
@@ -149,7 +148,7 @@ void Element::initializes() {
 }
 
 Object::Fields Element::shows() const {
-	Fields result;
+	auto result = Object::shows();
 
 	result.insert(VARIABLE(position));
 
@@ -232,9 +231,7 @@ void Ensemble::gets(std::string name, Unique_ptr&& element, size_t position) {
 		current->is_modified();
 		is_modified();
 	} else
-		throw Throw::null_argument(
-				NAME(base::Ensemble::gets(std::string, Unique_ptr&&, size_t)),
-				2);
+		throw Throw::null_argument(__func__, 2);
 }
 void Ensemble::takes(size_t current_position, Ensemble& current_ensemble,
 		size_t new_position) {
@@ -334,7 +331,7 @@ Ensemble::Unique_ptr Ensemble::gives(Container::iterator iterator) {
 }
 
 Object::Fields Ensemble::shows() const {
-	Fields result;
+	auto result = Element::shows();
 
 	result.insert(VARIABLE(container));
 
@@ -454,7 +451,7 @@ std::invalid_argument Throw::invalid_argument(const Object& object) {
 
 	return std::invalid_argument(result);
 }
-std::invalid_argument Throw::null_argument(const char* function,
+std::invalid_argument Throw::null_argument(std::string function,
 		size_t argument) {
 	std::string result = "A null argument#" + std::to_string(argument)
 			+ " is passed to function '" + function + "'.";
@@ -463,5 +460,4 @@ std::invalid_argument Throw::null_argument(const char* function,
 
 	return std::invalid_argument(result);
 }
-
 } /* namespace base */

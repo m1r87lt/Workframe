@@ -19,11 +19,15 @@
 #include <memory>
 #include <list>
 #include <vector>
-#define NAME(parameter) #parameter
+#include <iostream>
+#define NAME(parameter) base::get_name(typeid(parameter), #parameter)
 #define CLASS(type) base::Class<decltype(type)>(type, #type)
 #define VARIABLE(type) ((base::Variable::Field) base::Class<decltype(type)>(type, #type))
 
 namespace base {
+std::string get_name(std::type_index, const char* name) {
+	return name;
+}
 
 class Process {
 	static bool run;
@@ -161,7 +165,8 @@ struct Ensemble: public Element {
 	void self_clears();
 	template<typename Type, typename ... Arguments> void generates(
 			std::string name, size_t position = 1, Arguments&& ... arguments) {
-		gets(name, new Type(std::forward<Arguments&&>(arguments) ...),
+		gets(name,
+				Unique_ptr(new Type(std::forward<Arguments&&>(arguments) ...)),
 				position);
 	}
 	virtual Fields shows() const;
@@ -183,7 +188,7 @@ private:
 	Unique_ptr gives(Container::iterator);
 protected:
 	Ensemble() = default;
-	Ensemble(Fields = Fields());
+	Ensemble(Fields);
 	virtual ~Ensemble() = default;
 	Ensemble(const Ensemble&);
 	Ensemble& operator =(const Ensemble&) = delete;
@@ -192,7 +197,7 @@ protected:
 
 struct Throw {
 	static std::invalid_argument invalid_argument(const Object&);
-	static std::invalid_argument null_argument(const char*, size_t);
+	static std::invalid_argument null_argument(std::string, size_t);
 };
 
 } /* namespace base */

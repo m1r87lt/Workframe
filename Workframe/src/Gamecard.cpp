@@ -3,234 +3,172 @@
  *
  *  Created on: 19 nov 2018
  *      Author: m1r
- *
+ */
 
 #include "Gamecard.h"
 
-namespace base {
-
-//Class<std::unique_ptr<game::Card>>
-game::Deck::Unique_ptr Class<std::unique_ptr<game::Card>>::dynamicCast(
-		Ensemble::Unique_ptr&& card) {
-	return std::move(card);
-}
-
-game::Deck::Unique_ptr construct(Ensemble::Unique_ptr&& cover,
-		Ensemble::Unique_ptr&& face, base::Primitive<bool> covered = true,
-		const Log* caller = nullptr, base::Fields attributes = nullptr) {
-	return game::Deck::Unique_ptr::construct(std::move(cover), std::move(face),
-			covered, caller, attributes);
-}
-
-Class<std::unique_ptr<game::Card>>::Class(Ensemble::Unique_ptr&& card) :
-		Ensemble::Unique_ptr(std::move(card)) {
-}
-
-Class<std::unique_ptr<game::Card>>::Class(game::Deck::Unique_ptr && moving) :
-		Ensemble::Unique_ptr(std::move(moving)) {
-}
-
-} /* namespace base *
-
 namespace game {
-#define GAME "game"
 
 // Card
-const std::string Card::cover = "cover";
-const std::string Card::face = "face";
-const std::string Card::card = "card";
-
-base::Element& Card::operator [](base::Primitive<bool> cover) const {
-	return as_binary(__func__, cover, typeid(Element&)).returns(
-			Ensemble::operator [](cover ? 0 : 1));
+base::Element& Card::operator [](bool cover) const {
+	return Ensemble::operator [](cover ? 1 : 2);
 }
-
-base::Element& Card::operator ()(const Log* caller) const {
-	return as_method("", caller, typeid(Element&)).returns(operator [](covered));
+base::Element& Card::operator ()() const {
+	return operator [](covered);
 }
-base::Primitive<bool> Card::is_covered(const Log* caller) const {
-	return as_method<false>(__func__, caller, typeid(covered)).returns(covered);
+bool Card::is_covered() const {
+	return covered;
 }
 void Card::operator ~() {
-	as_unary("~");
 	covered = !covered;
 }
-void Card::faces(const Log* caller) {
-	as_method<false>(__func__, caller);
+void Card::faces() {
 	covered = false;
 }
-void Card::covers(const Log* caller) {
-	as_method<false>(__func__, caller);
+void Card::covers() {
 	covered = true;
 }
 
-base::Ensemble::Unique_ptr Card::construct(Unique_ptr&& cover,
-		Unique_ptr&& face, base::Primitive<bool> covered, const Log* caller,
-		base::Fields attributes) {
-	auto log = as_method(base::make_scopes(GAME, __func__, TYPEID(Card)), true,
-			caller, typeid(base::Unique_ptr), cover, face, covered, attributes);
+Card::Fields Card::shows() const {
+	auto result = Ensemble::shows();
 
-	return log.returns(
-			Unique_ptr::construct<Card>(&log, std::move(cover), std::move(face),
-					covered, base::Primitive<const Log*>(&log, &log),
-					attributes));
+	result.insert(VARIABLE(covered));
+
+	return result;
+}
+std::string Card::prints() const {
+	std::ostringstream result;
+
+	result << NAME(Card) << (covered ? "( " : "[ ") << this
+			<< (covered ? " )" : " ]");
+
+	return result.str();
 }
 
-Card::Card(Unique_ptr&& cover, Unique_ptr&& face, base::Primitive<bool> covered,
-		const Log* caller, base::Fields attributes) :
-		ENSEMBLE(true,
-				base::make_scopes(GAME, __func__), caller, attributes), covered(
-				covered) {
-	as_constructor(GAME, __func__, this, cover, face, covered, attributes);
-	gets(base::Class<std::string>(Card::face), std::move(face), 1, this);
-	gets(base::Class<std::string>(Card::cover), std::move(cover), 1, this);
+base::Element* Card::cast(Card* pointer) {
+	return dynamic_cast<Element*>(pointer);
+}
+Card::Unique_ptr Card::construct(Unique_ptr&& cover, Unique_ptr&& face,
+		bool covered, Fields attributes) {
+	return Unique_ptr(
+			new Card(std::move(cover), std::move(face), covered, attributes));
 }
 
-Card::~Card() {
-	as_destructor(GAME, __func__);
+Card::Card(Unique_ptr&& cover, Unique_ptr&& face, bool covered,
+		Fields attributes) :
+		Ensemble(attributes) {
+	this->covered = covered;
+	gets(NAME(cover), std::move(cover));
+	gets(NAME(face), std::move(face));
 }
 
 // Deck
-size_t Deck::randomly_gives(base::Primitive<bool> add, const Log* caller) {
-	auto log = as_method(__func__, caller, typeid(size_t), add);
+size_t Deck::randomly_gives(bool add) {
 	std::default_random_engine generator;
 	std::uniform_int_distribution<size_t> distribution(1,
-			has_size(&log) + (add ? 0 : 1));
+			has_size() + (add ? 0 : 1));
 
-	return log.returns(base::Primitive<size_t>(distribution(generator), &log));
+	return distribution(generator);
 }
-
-void Deck::generates_over(Ensemble::Unique_ptr&& cover,
-		Ensemble::Unique_ptr&& face, const Log* caller,
-		base::Fields attributes) {
-	auto log = as_method(__func__, caller, typeid(void), cover, face,
-			attributes);
-
-	generates<Card>(base::Class<std::string>(Card::card, &log),
-			base::Primitive<size_t>(1, &log), &log, std::move(cover),
-			std::move(face), base::Primitive<bool>(covered, &log),
-			base::Primitive<const Log*>(&log, &log), attributes);
+void Deck::generates_over(Unique_ptr&& cover, Unique_ptr&& face,
+		Fields attributes) {
+	generates<game::Card>(NAME(game::Card), 1, std::move(cover),
+			std::move(face), covered, attributes);
 }
-void Deck::generates_under(Ensemble::Unique_ptr&& cover,
-		Ensemble::Unique_ptr&& face, const Log* caller,
-		base::Fields attributes) {
-	auto log = as_method(__func__, caller, typeid(void), cover, face,
-			attributes);
-
-	generates<Card>(base::Class<std::string>(Card::card, &log),
-			Ensemble::has_size(&log), &log, std::move(cover), std::move(face),
-			base::Primitive<bool>(covered, &log),
-			base::Primitive<const Log*>(&log, &log), attributes);
+void Deck::generates_under(Unique_ptr&& cover, Unique_ptr&& face,
+		Fields attributes) {
+	generates<game::Card>(NAME(game::Card), Ensemble::has_size() + 1,
+			std::move(cover), std::move(face), covered, attributes);
 }
-void Deck::randomly_generates(Ensemble::Unique_ptr&& cover,
-		Ensemble::Unique_ptr&& face, const Log* caller,
-		base::Fields attributes) {
-	auto log = as_method(__func__, caller, typeid(void), cover, face,
-			attributes);
-
-	generates<Card>(base::Class<std::string>(Card::card, &log),
-			base::Primitive<size_t>(randomly_gives(true, &log), &log), &log,
-			std::move(cover), std::move(face),
-			base::Primitive<bool>(covered, &log),
-			base::Primitive<const Log*>(&log, &log), attributes);
+void Deck::randomly_generates(Unique_ptr&& cover, Unique_ptr&& face,
+		Fields attributes) {
+	generates<game::Card>(NAME(game::Card), randomly_gives(true),
+			std::move(cover), std::move(face), covered, attributes);
 }
-void Deck::gets_over(Unique_ptr&& card, const Log* caller) {
-	auto log = as_method(__func__, caller);
-
-	gets(base::Class<std::string>(Card::card, &log), std::move(card),
-			base::Primitive<size_t>(1, &log), &log);
+void Deck::gets_over(Deck::Card&& card) {
+	gets(NAME(game::Card), cast(std::move(card)));
 }
-void Deck::gets_under(Unique_ptr&& card, const Log* caller) {
-	auto log = as_method(__func__, caller);
-
-	gets(base::Class<std::string>(Card::card, &log), std::move(card),
-			has_size(&log), &log);
+void Deck::gets_under(Deck::Card&& card) {
+	gets(NAME(game::Card), cast(std::move(card)), has_size() + 1);
 }
-void Deck::randomly_gets(Unique_ptr&& card, const Log* caller) {
-	auto log = as_method(__func__, caller);
-
-	gets(base::Class<std::string>(Card::card, &log), std::move(card),
-			randomly_gives(true, &log), &log);
+void Deck::randomly_gets(Deck::Card&& card) {
+	gets(NAME(game::Card), cast(std::move(card)), randomly_gives(true));
 }
-Deck::Unique_ptr Deck::draws_over(const Log* caller) {
-	auto log = as_method(__func__, caller, typeid(Unique_ptr));
-
-	return log.returns(
-			Unique_ptr::dynamicCast(
-					gives(base::Primitive<size_t>(1, &log), &log)));
+Deck::Card Deck::draws_over() {
+	return cast(gives(1));
 }
-Deck::Unique_ptr Deck::draws_under(const Log* caller) {
-	auto log = as_method(__func__, caller, typeid(Unique_ptr));
-
-	return log.returns(Unique_ptr::dynamicCast(gives(has_size(&log), &log)));
+Deck::Card Deck::draws_under() {
+	return cast(gives(has_size()));
 }
-Deck::Unique_ptr Deck::randomly_draws(const Log* caller) {
-	auto log = as_method(__func__, caller, typeid(Unique_ptr));
-
-	return log.returns(
-			Unique_ptr::dynamicCast(gives(randomly_gives(false, &log), &log)));
+Deck::Card Deck::randomly_draws() {
+	return cast(gives(randomly_gives(false)));
 }
-base::Primitive<size_t> Deck::has_size(const Log* caller) const {
-	auto log = as_method(__func__, caller, typeid(base::Primitive<size_t>));
-
-	return log.returns(Ensemble::has_size(&log));
+size_t Deck::has_size() const {
+	return Ensemble::has_size();
 }
-void Deck::self_clears(const Log* caller) {
-	auto log = as_method(__func__, caller);
-
-	Ensemble::self_clears(&log);
+void Deck::self_clears() {
+	Ensemble::self_clears();
 }
-void Deck::shuffles(const Log* caller) {
-	auto log = as_method(__func__, caller);
+void Deck::shuffles() {
 	std::default_random_engine generator;
-	auto size = has_size(&log);
+	auto size = has_size();
 
-	if (size > 1) {
-		base::Primitive<size_t> front(1, &log);
-		base::Primitive<Ensemble*> it(this, &log);
-
+	if (size > 1)
 		for (size_t index = 1; index <= size; ++index)
-			takes(it,
-					base::Primitive<size_t>(
-							std::uniform_int_distribution<size_t>(index, size)(
-									generator), &log), front, &log);
-	}
+			takes(std::uniform_int_distribution<size_t>(index, size)(generator),
+					*this);
 }
-base::Primitive<bool> Deck::is_covered(const Log* caller) const {
-	return as_method<false>(__func__, caller, typeid(covered)).returns(covered);
+bool Deck::is_covered() const {
+	return covered;
 }
 void Deck::operator ~() {
-	as_unary("~");
 	covered = !covered;
 }
-void Deck::faces(const Log* caller) {
-	as_method<false>(__func__, caller);
+void Deck::faces() {
 	covered = false;
 }
-void Deck::covers(const Log* caller) {
-	as_method<false>(__func__, caller);
+void Deck::covers() {
 	covered = true;
 }
 
-base::Ensemble::Unique_ptr Deck::construct(base::Primitive<bool> covered,
-		const Log* caller, base::Fields attributes) {
-	auto log = as_method(base::make_scopes(GAME, __func__, TYPEID(Deck)), true,
-			caller, typeid(base::Unique_ptr), covered, attributes);
+Deck::Fields Deck::shows() const {
+	auto result = Ensemble::shows();
 
-	return log.returns(
-			Ensemble::Unique_ptr::construct<Deck>(&log, covered,
-					base::Primitive<const Log*>(&log, &log), attributes));
+	result.insert(VARIABLE(covered));
+
+	return result;
+}
+std::string Deck::prints() const {
+	std::ostringstream result;
+
+	result << NAME(Deck) << (covered ? "( " : "[ ") << this
+			<< (covered ? " )" : " ]");
+
+	return result.str();
 }
 
-Deck::Deck(base::Primitive<bool> covered, const Log* caller,
-		base::Fields attributes) :
-		ENSEMBLE(false, base::make_scopes(GAME, __func__), caller, attributes), covered(
-				covered) {
-	as_constructor(GAME, __func__, this, covered, attributes);
+Deck::Unique_ptr Deck::cast(Deck::Card&& unique_ptr) {
+	return Deck::Unique_ptr(unique_ptr.release());
 }
 
-Deck::~Deck() {
-	as_destructor(GAME, __func__);
+Deck::Card Deck::cast(Unique_ptr&& unique_ptr) {
+	return Deck::Card(dynamic_cast<game::Card*>(unique_ptr.release()));
+}
+
+base::Element* Deck::cast(Deck* pointer) {
+	return dynamic_cast<Element*>(pointer);
+}
+Deck::Unique_ptr Deck::construct(bool covered, Fields attributes) {
+	return Unique_ptr(new Deck(covered, attributes));
+}
+
+Deck::Deck() :
+		Ensemble() {
+	covered = true;
+}
+Deck::Deck(bool covered, Fields attributes) :
+		Ensemble(attributes) {
+	this->covered = covered;
 }
 
 } /* namespace game */
