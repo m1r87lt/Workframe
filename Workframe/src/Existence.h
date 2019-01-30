@@ -95,6 +95,8 @@ struct Object {
 	Fields gives_attributes() const;
 	void gets_attributes(Fields);
 	Modifications gives_modifications();
+	bool operator ==(const Object&);
+	bool operator !=(const Object&);
 	virtual Fields shows() const;
 	virtual std::string prints() const = 0;
 private:
@@ -163,11 +165,13 @@ struct Ensemble: public Element {
 	void takes(std::string, Ensemble&, size_t = 1);
 	size_t has_size() const;
 	void self_clears();
-	template<typename Type, typename ... Arguments> void generates(
+	template<typename Type, typename ... Arguments> Type* generates(
 			std::string name, size_t position = 1, Arguments&& ... arguments) {
-		gets(name,
-				Unique_ptr(new Type(std::forward<Arguments&&>(arguments) ...)),
-				position);
+		auto result = new Type(std::forward<Arguments&&>(arguments) ...);
+
+		gets(name, Unique_ptr(result), position);
+
+		return result;
 	}
 	virtual Fields shows() const;
 	static std::tuple<Ensemble*, size_t, std::string> localize(const Element&);
@@ -178,6 +182,9 @@ struct Ensemble: public Element {
 	static std::string log_out_of_range_0(size_t, size_t);
 	static std::out_of_range throw_out_of_range_0(size_t, size_t);
 	static std::domain_error throw_root_element(const Element&);
+	static std::runtime_error throw_wrong_position(const Element&,
+			const Ensemble*);
+	static std::logic_error throw_not_allowed(std::string);
 private:
 	Container container;
 

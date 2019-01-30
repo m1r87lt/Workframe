@@ -20,7 +20,7 @@ bool Card::is_covered() const {
 	return covered;
 }
 void Card::operator ~() {
-	covered = !covered;
+		covered = !covered;
 }
 void Card::faces() {
 	covered = false;
@@ -39,14 +39,14 @@ Card::Fields Card::shows() const {
 std::string Card::prints() const {
 	std::ostringstream result;
 
-	result << NAME(Card) << (covered ? "( " : "[ ") << this
+	result << NAME(game::Card) << (covered ? "( " : "[ ") << this
 			<< (covered ? " )" : " ]");
 
 	return result.str();
 }
 
-base::Element* Card::cast(Card* pointer) {
-	return dynamic_cast<Element*>(pointer);
+base::Element* Card::cast(const Card* pointer) {
+	return dynamic_cast<Element*>(const_cast<Card*>(pointer));
 }
 Card::Unique_ptr Card::construct(Unique_ptr&& cover, Unique_ptr&& face,
 		bool covered, Fields attributes) {
@@ -141,7 +141,7 @@ Deck::Fields Deck::shows() const {
 std::string Deck::prints() const {
 	std::ostringstream result;
 
-	result << NAME(Deck) << (covered ? "( " : "[ ") << this
+	result << NAME(game::Deck) << (covered ? "( " : "[ ") << this
 			<< (covered ? " )" : " ]");
 
 	return result.str();
@@ -155,8 +155,8 @@ Deck::Card Deck::cast(Unique_ptr&& unique_ptr) {
 	return Deck::Card(dynamic_cast<game::Card*>(unique_ptr.release()));
 }
 
-base::Element* Deck::cast(Deck* pointer) {
-	return dynamic_cast<Element*>(pointer);
+base::Element* Deck::cast(const Deck* pointer) {
+	return dynamic_cast<Element*>(const_cast<Deck*>(pointer));
 }
 Deck::Unique_ptr Deck::construct(bool covered, Fields attributes) {
 	return Unique_ptr(new Deck(covered, attributes));

@@ -29,7 +29,7 @@ public:
 	void covers();
 	virtual Fields shows() const;
 	virtual std::string prints() const;
-	static Element* cast(Card*);
+	static Element* cast(const Card*);
 	static Unique_ptr construct(Unique_ptr&&, Unique_ptr&&, bool = true,
 			Fields = Fields());
 };
@@ -64,7 +64,7 @@ public:
 	virtual std::string prints() const;
 	static Unique_ptr cast(Deck::Card&&);
 	static Deck::Card cast(Unique_ptr&&);
-	static Element* cast(Deck*);
+	static Element* cast(const Deck*);
 	static Unique_ptr construct(bool = true, Fields = Fields());
 };
 

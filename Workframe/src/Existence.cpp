@@ -104,6 +104,12 @@ Object::Modifications Object::gives_modifications() {
 
 	return result;
 }
+bool Object::operator ==(const Object& righthand) {
+	return std::is_same<decltype(*this), decltype(righthand)>::value;
+}
+bool Object::operator !=(const Object& righthand) {
+	return operator ==(righthand);
+}
 void Object::initializes(Fields attributes) {
 	this->attributes = attributes;
 	is_modified();
@@ -354,19 +360,8 @@ std::tuple<Ensemble*, size_t, std::string> Ensemble::localize(
 			position = 0;
 		if (position)
 			name = current->first;
-		else {
-			std::ostringstream result(
-					element.prints() + " has the wrong position ");
-
-			if (ensemble)
-				result << ensemble->prints();
-			else
-				result << ensemble;
-			result << ".";
-			std::cerr << result.str() << std::endl;
-
-			throw std::runtime_error(result.str());
-		}
+		else
+			throw_wrong_position(element, ensemble);
 	} else
 		std::clog << log_root_element(element) << std::endl;
 
@@ -434,6 +429,26 @@ std::domain_error Ensemble::throw_root_element(const Element& element) {
 	std::cerr << result << std::endl;
 
 	return std::domain_error(result);
+}
+std::runtime_error Ensemble::throw_wrong_position(const Element& element,
+		const Ensemble* ensemble) {
+	std::ostringstream result(
+			element.prints() + " has the wrong position ");
+
+	if (ensemble)
+		result << ensemble->prints();
+	else
+		result << ensemble;
+	result << ".";
+	std::cerr << result.str() << std::endl;
+
+	return std::runtime_error(result.str());
+}
+std::logic_error Ensemble::throw_not_allowed(std::string message) {
+	message = "operation not allowed" + (message.empty() ? "" : ":" + message);
+	std::cerr << message << std::endl;
+
+	return std::logic_error(message);
 }
 
 Ensemble::Ensemble(Fields attributes) :
