@@ -20,14 +20,17 @@
 #include <list>
 #include <vector>
 #include <iostream>
-#define NAME(parameter) base::get_name(typeid(parameter), #parameter)
+#define NAME(Parameter) base::Name<Parameter>()(#Parameter)
+#define TYPE(parameter) base::Name<decltype(parameter)>()(#parameter)
 #define CLASS(type) base::Class<decltype(type)>(type, #type)
 #define VARIABLE(type) ((base::Variable::Field) base::Class<decltype(type)>(type, #type))
 
 namespace base {
-std::string get_name(std::type_index, const char* name) {
-	return name;
-}
+template<typename Type> struct Name {
+	std::string operator ()(const char* name) {
+		return name;
+	}
+};
 
 class Process {
 	static bool run;
@@ -184,7 +187,6 @@ struct Ensemble: public Element {
 	static std::domain_error throw_root_element(const Element&);
 	static std::runtime_error throw_wrong_position(const Element&,
 			const Ensemble*);
-	static std::logic_error throw_not_allowed(std::string);
 private:
 	Container container;
 
@@ -205,6 +207,7 @@ protected:
 struct Throw {
 	static std::invalid_argument invalid_argument(const Object&);
 	static std::invalid_argument null_argument(std::string, size_t);
+	static std::logic_error not_allowed(std::string);
 };
 
 } /* namespace base */

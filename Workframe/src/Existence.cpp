@@ -444,12 +444,6 @@ std::runtime_error Ensemble::throw_wrong_position(const Element& element,
 
 	return std::runtime_error(result.str());
 }
-std::logic_error Ensemble::throw_not_allowed(std::string message) {
-	message = "operation not allowed" + (message.empty() ? "" : ":" + message);
-	std::cerr << message << std::endl;
-
-	return std::logic_error(message);
-}
 
 Ensemble::Ensemble(Fields attributes) :
 		Element(attributes) {
@@ -475,4 +469,11 @@ std::invalid_argument Throw::null_argument(std::string function,
 
 	return std::invalid_argument(result);
 }
+std::logic_error Throw::not_allowed(std::string message) {
+	message = "Operation not allowed" + (message.empty() ? "" : ": " + message);
+	std::cerr << message << std::endl;
+
+	return std::logic_error(message);
+}
+
 } /* namespace base */

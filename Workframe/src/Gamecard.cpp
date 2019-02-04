@@ -16,17 +16,55 @@ base::Element& Card::operator [](bool cover) const {
 base::Element& Card::operator ()() const {
 	return operator [](covered);
 }
+base::Ensemble* Card::is_ensemble(bool cover) const {
+	Ensemble* result = nullptr;
+	Element& face = operator [](cover);
+
+	try {
+		result = &dynamic_cast<Ensemble&>(face);
+	} catch (std::exception& e) {
+		std::clog << prints() << "'s face " << face.prints()
+				<< " is not Ensemble-derived." << std::endl;
+	}
+
+	return result;
+}
+void Card::manages_piled(bool covered, bool do_keep_piled) {
+	auto face = is_ensemble(covered);
+
+	if (face && do_keep_piled) {
+		auto other = is_ensemble(!covered);
+
+		if (other) {
+			auto content = face->has_size();
+
+			while (content)
+				other->takes(content--, *face, 1);
+		}
+	} else if (face)
+		face->self_clears();
+}
 bool Card::is_covered() const {
 	return covered;
 }
 void Card::operator ~() {
-		covered = !covered;
+	auto face = is_ensemble(covered);
+
+	covered = !covered;
+	if (face)
+		face->self_clears();
 }
-void Card::faces() {
-	covered = false;
+void Card::faces(bool do_keep_piled) {
+	if (covered) {
+		manages_piled(covered, do_keep_piled);
+		covered = false;
+	}
 }
-void Card::covers() {
-	covered = true;
+void Card::covers(bool do_keep_piled) {
+	if (!covered) {
+		manages_piled(covered, do_keep_piled);
+		covered = true;
+	}
 }
 
 Card::Fields Card::shows() const {
@@ -58,8 +96,8 @@ Card::Card(Unique_ptr&& cover, Unique_ptr&& face, bool covered,
 		Fields attributes) :
 		Ensemble(attributes) {
 	this->covered = covered;
-	gets(NAME(cover), std::move(cover));
-	gets(NAME(face), std::move(face));
+	gets(TYPE(cover), std::move(cover));
+	gets(TYPE(face), std::move(face));
 }
 
 // Deck
@@ -122,13 +160,29 @@ bool Deck::is_covered() const {
 	return covered;
 }
 void Deck::operator ~() {
+	auto content = has_size();
+
 	covered = !covered;
+	while (content--)
+		~dynamic_cast<game::Card&>(operator [](content));
 }
 void Deck::faces() {
-	covered = false;
+	if (covered) {
+		auto content = has_size();
+
+		covered = false;
+		while (content--)
+			~dynamic_cast<game::Card&>(operator [](content));
+	}
 }
 void Deck::covers() {
-	covered = true;
+	if (!covered) {
+		auto content = has_size();
+
+		covered = true;
+		while (content--)
+			~dynamic_cast<game::Card&>(operator [](content));
+	}
 }
 
 Deck::Fields Deck::shows() const {

@@ -23,10 +23,12 @@ protected:
 	friend Ensemble;
 public:
 	Element& operator ()() const;
+	Ensemble* is_ensemble(bool) const;
+	void manages_piled(bool, bool);
 	bool is_covered() const;
 	void operator ~();
-	void faces();
-	void covers();
+	void faces(bool);
+	void covers(bool);
 	virtual Fields shows() const;
 	virtual std::string prints() const;
 	static Element* cast(const Card*);
