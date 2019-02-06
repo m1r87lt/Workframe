@@ -56,6 +56,26 @@ template<> std::function<std::string(Element* const *)> Class<Element*>::printer
 		};
 template<> std::function<std::string(const std::set<Element*>*)> Class<
 		std::set<Element*>>::printer = print_std__set<Element*>;
+template<> std::function<
+		std::string(
+				const std::list<
+						std::pair<std::string, std::unique_ptr<Element> > >*)> Class<
+		std::list<std::pair<std::string, std::unique_ptr<Element> > > >::printer =
+		[](const Ensemble::Container* container) {
+			std::string result = "{";
+			std::ostringstream list;
+			auto end = container->end();
+
+			for (auto current = container->begin(); current != end; ++current)
+			list << "\n\t" << current->first << ": #" << current->second.get() << "#;";
+
+			if ((result = list.str()) == "{")
+			result += " ";
+			else
+			result.back() = '\n';
+
+			return result + "}";
+		};
 
 //Object
 std::chrono::steady_clock::time_point Object::start =
@@ -432,8 +452,7 @@ std::domain_error Ensemble::throw_root_element(const Element& element) {
 }
 std::runtime_error Ensemble::throw_wrong_position(const Element& element,
 		const Ensemble* ensemble) {
-	std::ostringstream result(
-			element.prints() + " has the wrong position ");
+	std::ostringstream result(element.prints() + " has the wrong position ");
 
 	if (ensemble)
 		result << ensemble->prints();

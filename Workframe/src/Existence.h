@@ -87,6 +87,39 @@ template<typename Type> std::string print_std__set(const std::set<Type>* set) {
 
 	return result + (result == "{" ? " " : "\n") + "}";
 }
+template<typename Type> std::string print_std__vector(const std::vector<Type>* vector) {
+	std::string result = "{";
+
+	for (auto content : *vector)
+		result += "\n\t" + VARIABLE(content).second + ",";
+
+	if (result == "{")
+		result += " ";
+	else
+		result.back() = '\n';
+
+	return result + "}";
+}
+template<typename Type, size_t N> std::string print_std__array(const std::array<Type, N>* array) {
+	std::string result = "{";
+
+	for (auto content : *array)
+		result += "\n\t" + VARIABLE(content).second + ",";
+
+	if (result == "{")
+		result += " ";
+	else
+		result.back() = '\n';
+
+	return result + "}";
+}
+template<typename Type> std::string print_fundamental(const Type* type) {
+	std::ostringstream result("{");
+
+	result << *type << " }";
+
+	return result.str();
+}
 
 struct Object {
 	using Instant = std::chrono::steady_clock::time_point;
