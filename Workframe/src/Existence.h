@@ -114,9 +114,9 @@ template<typename Type, size_t N> std::string print_std__array(const std::array<
 	return result + "}";
 }
 template<typename Type> std::string print_fundamental(const Type* type) {
-	std::ostringstream result("{");
+	std::ostringstream result;
 
-	result << *type << " }";
+	result << *type;
 
 	return result.str();
 }
