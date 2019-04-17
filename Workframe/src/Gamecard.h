@@ -17,6 +17,7 @@ class Card: private base::Ensemble {
 	bool covered;
 
 	Element& operator [](bool) const;
+	void manages_piled(bool, bool);
 protected:
 	Card(Unique_ptr&&, Unique_ptr&&, bool = true, Fields = Fields());
 	friend class Deck;
@@ -24,14 +25,14 @@ protected:
 public:
 	Element& operator ()() const;
 	Ensemble* is_ensemble(bool) const;
-	void manages_piled(bool, bool);
 	bool is_covered() const;
 	void operator ~();
 	void faces(bool);
 	void covers(bool);
 	virtual Fields shows() const;
 	virtual std::string prints() const;
-	static Element* cast(const Card*);
+	static Ensemble* cast(const Card*);
+	static Card* cast(const Element*);
 	static Unique_ptr construct(Unique_ptr&&, Unique_ptr&&, bool = true,
 			Fields = Fields());
 };
@@ -66,7 +67,8 @@ public:
 	virtual std::string prints() const;
 	static Unique_ptr cast(Deck::Card&&);
 	static Deck::Card cast(Unique_ptr&&);
-	static Element* cast(const Deck*);
+	static Ensemble* cast(const Deck*);
+	static Deck* cast(const Element*);
 	static Unique_ptr construct(bool = true, Fields = Fields());
 };
 

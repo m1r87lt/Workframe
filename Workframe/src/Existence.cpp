@@ -56,6 +56,55 @@ template<> std::function<std::string(Element* const *)> Class<Element*>::printer
 		};
 template<> std::function<std::string(const std::set<Element*>*)> Class<
 		std::set<Element*>>::printer = print_std__set<Element*>;
+template<> std::function<
+		std::string(
+				const std::list<
+						std::pair<std::string, std::unique_ptr<Element> > >*)> Class<
+		std::list<std::pair<std::string, std::unique_ptr<Element> > > >::printer =
+		[](const Ensemble::Container* container) {
+			std::string result = "{";
+			std::ostringstream list;
+			auto end = container->end();
+
+			for (auto current = container->begin(); current != end; ++current)
+			list << "\n\t" << current->first << ": #" << current->second.get() << "#;";
+
+			if ((result += list.str()) == "{")
+			result += " ";
+			else
+			result += "\n";
+
+			return result + "}";
+		};
+template<> std::function<std::string(const std::invalid_argument*)> Class<
+		std::invalid_argument>::printer =
+		[](const std::invalid_argument* exception) {
+			return exception->what();
+		};
+template<> std::function<std::string(const std::logic_error*)> Class<
+		std::logic_error>::printer = [](const std::logic_error* exception) {
+	return exception->what();
+};
+template<> std::function<
+		std::string(
+				const std::map<std::string,
+						std::pair<const std::string, std::string>>*)> Class<
+		std::map<std::string, std::pair<const std::string, std::string>>>::printer =
+		print_std__map<std::string, std::pair<const std::string, std::string>>;
+template<> std::function<std::string(const bool*)> Class<bool>::printer =
+		print_fundamental<bool>;
+template<> std::function<std::string(Ensemble* const *)> Class<Ensemble*>::printer =
+		print_fundamental<Ensemble*>;
+template<> std::function<std::string(const long long unsigned*)> Class<
+		long long unsigned>::printer = print_fundamental<long long unsigned>;
+template<> std::function<std::string(const int*)> Class<int>::printer =
+		print_fundamental<int>;
+template<> std::function<
+		std::string(const std::pair<const std::string, std::string>*)> Class<
+		std::pair<const std::string, std::string>>::printer =
+		[](const std::pair<const std::string, std::string>* pair) {
+			return "{ " + pair->first + "; " + pair->second + " }";
+		};
 
 //Object
 std::chrono::steady_clock::time_point Object::start =
@@ -105,10 +154,10 @@ Object::Modifications Object::gives_modifications() {
 	return result;
 }
 bool Object::operator ==(const Object& righthand) {
-	return std::is_same<decltype(*this), decltype(righthand)>::value;
+	return typeid(*this) == typeid(righthand);
 }
 bool Object::operator !=(const Object& righthand) {
-	return operator ==(righthand);
+	return !operator ==(righthand);
 }
 void Object::initializes(Fields attributes) {
 	this->attributes = attributes;
@@ -230,8 +279,6 @@ void Ensemble::gets(std::string name, Unique_ptr&& element, size_t position) {
 	auto iterator = localizes(position);
 
 	if (current) {
-		if (iterator == container.end())
-			throw throw_out_of_range_0(position, container.size());
 		container.emplace(iterator, names(name), std::move(element));
 		current->position = this;
 		current->is_modified();
@@ -268,6 +315,7 @@ std::string Ensemble::names(std::string candidate) const {
 	std::set<std::string> found;
 	auto current = container.begin();
 	std::set<std::string>::iterator last;
+	auto length = candidate.length();
 
 	if (candidate.empty())
 		candidate = "_";
@@ -276,11 +324,9 @@ std::string Ensemble::names(std::string candidate) const {
 			found.emplace(current->first);
 	last = found.end();
 	if (found.find(candidate) != last)
-		candidate += "_"
-				+ std::to_string(
-						std::stoull(
-								(--found.end())->substr(candidate.length() + 1))
-								+ 1);
+		if ((--last)->length() > length)
+			candidate += "_"
+					+ std::to_string(std::stoull(last->substr(length + 1)) + 1);
 
 	return candidate;
 }
@@ -293,7 +339,7 @@ bool Ensemble::names(std::string name, std::string candidate) const {
 		if (position < candidate.length()
 				|| name + "_" != candidate.substr(0, prefix))
 			throw std::exception();
-	} catch (std::exception&) {
+	} catch (...) {
 		return name == candidate;
 	}
 
@@ -301,7 +347,7 @@ bool Ensemble::names(std::string name, std::string candidate) const {
 }
 Ensemble::Container::iterator Ensemble::localizes(size_t position) const {
 	auto result = const_cast<Container&>(container).begin();
-	auto size = container.size();
+	auto size = container.size() + 1;
 
 	if (position <= size && position)
 		while (--position)
@@ -327,11 +373,15 @@ std::pair<size_t, Ensemble::Container::iterator> Ensemble::localizes(
 Ensemble::Unique_ptr Ensemble::gives(Container::iterator iterator) {
 	Unique_ptr result;
 
-	result.swap(iterator->second);
-	is_modified();
-	result->position = nullptr;
-	result->is_modified();
-	container.erase(iterator);
+	if (iterator == container.end())
+		throw throw_out_of_range_0(container.size(), container.size());
+	else {
+		result.swap(iterator->second);
+		is_modified();
+		result->position = nullptr;
+		result->is_modified();
+		container.erase(iterator);
+	}
 
 	return std::move(result);
 }
@@ -432,8 +482,7 @@ std::domain_error Ensemble::throw_root_element(const Element& element) {
 }
 std::runtime_error Ensemble::throw_wrong_position(const Element& element,
 		const Ensemble* ensemble) {
-	std::ostringstream result(
-			element.prints() + " has the wrong position ");
+	std::ostringstream result(element.prints() + " has the wrong position ");
 
 	if (ensemble)
 		result << ensemble->prints();

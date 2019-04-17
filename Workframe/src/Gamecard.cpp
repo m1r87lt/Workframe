@@ -13,6 +13,21 @@ namespace game {
 base::Element& Card::operator [](bool cover) const {
 	return Ensemble::operator [](cover ? 1 : 2);
 }
+void Card::manages_piled(bool covered, bool do_keep_piled) {
+	auto face = is_ensemble(covered);
+
+	if (face && do_keep_piled) {
+		auto other = is_ensemble(!covered);
+
+		if (other) {
+			auto content = face->has_size();
+
+			while (content)
+				other->takes(content--, *face, 1);
+		}
+	} else if (face)
+		face->self_clears();
+}
 base::Element& Card::operator ()() const {
 	return operator [](covered);
 }
@@ -28,21 +43,6 @@ base::Ensemble* Card::is_ensemble(bool cover) const {
 	}
 
 	return result;
-}
-void Card::manages_piled(bool covered, bool do_keep_piled) {
-	auto face = is_ensemble(covered);
-
-	if (face && do_keep_piled) {
-		auto other = is_ensemble(!covered);
-
-		if (other) {
-			auto content = face->has_size();
-
-			while (content)
-				other->takes(content--, *face, 1);
-		}
-	} else if (face)
-		face->self_clears();
 }
 bool Card::is_covered() const {
 	return covered;
@@ -83,8 +83,11 @@ std::string Card::prints() const {
 	return result.str();
 }
 
-base::Element* Card::cast(const Card* pointer) {
-	return dynamic_cast<Element*>(const_cast<Card*>(pointer));
+base::Ensemble* Card::cast(const Card* pointer) {
+	return reinterpret_cast<Ensemble*>(const_cast<Card*>(pointer));
+}
+game::Card* Card::cast(const Element* pointer) {
+	return reinterpret_cast<Card*>(const_cast<Element*>(pointer));
 }
 Card::Unique_ptr Card::construct(Unique_ptr&& cover, Unique_ptr&& face,
 		bool covered, Fields attributes) {
@@ -96,8 +99,8 @@ Card::Card(Unique_ptr&& cover, Unique_ptr&& face, bool covered,
 		Fields attributes) :
 		Ensemble(attributes) {
 	this->covered = covered;
-	gets(TYPE(cover), std::move(cover));
 	gets(TYPE(face), std::move(face));
+	gets(TYPE(cover), std::move(cover));
 }
 
 // Deck
@@ -160,28 +163,22 @@ bool Deck::is_covered() const {
 	return covered;
 }
 void Deck::operator ~() {
-	auto content = has_size();
-
 	covered = !covered;
-	while (content--)
-		~dynamic_cast<game::Card&>(operator [](content));
+	for (auto content = has_size(); content; --content)
+		~*game::Card::cast(&(operator [](content)));
 }
 void Deck::faces() {
 	if (covered) {
-		auto content = has_size();
-
 		covered = false;
-		while (content--)
-			~dynamic_cast<game::Card&>(operator [](content));
+		for (auto content = has_size(); content; --content)
+			~*game::Card::cast(&(operator [](content)));
 	}
 }
 void Deck::covers() {
 	if (!covered) {
-		auto content = has_size();
-
 		covered = true;
-		while (content--)
-			~dynamic_cast<game::Card&>(operator [](content));
+		for (auto content = has_size(); content; --content)
+			~*game::Card::cast(&(operator [](content)));
 	}
 }
 
@@ -200,17 +197,17 @@ std::string Deck::prints() const {
 
 	return result.str();
 }
-
 Deck::Unique_ptr Deck::cast(Deck::Card&& unique_ptr) {
 	return Deck::Unique_ptr(unique_ptr.release());
 }
-
 Deck::Card Deck::cast(Unique_ptr&& unique_ptr) {
-	return Deck::Card(dynamic_cast<game::Card*>(unique_ptr.release()));
+	return Deck::Card(reinterpret_cast<game::Card*>(unique_ptr.release()));
 }
-
-base::Element* Deck::cast(const Deck* pointer) {
-	return dynamic_cast<Element*>(const_cast<Deck*>(pointer));
+base::Ensemble* Deck::cast(const Deck* pointer) {
+	return reinterpret_cast<Ensemble*>(const_cast<Deck*>(pointer));
+}
+Deck* Deck::cast(const Element* pointer) {
+	return reinterpret_cast<Deck*>(const_cast<Element*>(pointer));
 }
 Deck::Unique_ptr Deck::construct(bool covered, Fields attributes) {
 	return Unique_ptr(new Deck(covered, attributes));
