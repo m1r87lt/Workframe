@@ -162,7 +162,7 @@ bool Object::operator !=(const Object& righthand) {
 void Object::initializes(Fields attributes) {
 	this->attributes = attributes;
 	is_modified();
-	creation = modification;
+	creation = savage = modification;
 }
 void Object::is_modified() {
 	modification = std::chrono::steady_clock::now();
@@ -274,6 +274,17 @@ Ensemble::Unique_ptr Ensemble::gives(size_t position) {
 Ensemble::Unique_ptr Ensemble::gives(std::string name) {
 	return gives(localizes(name).second);
 }
+void Ensemble::reclames() {
+	if (Process::saving()) {
+		if (out.empty())
+			log_not_saved(NAME(out));
+		else {
+			auto outbound = out.back();
+
+			gets(std::get<1>(outbound), std::get<2>(outbound), std::get<0>(outbound));
+		}
+	}
+}
 void Ensemble::gets(std::string name, Unique_ptr&& element, size_t position) {
 	auto current = element.get();
 	auto iterator = localizes(position);
@@ -304,12 +315,23 @@ void Ensemble::takes(std::string current_name, Ensemble& current_ensemble,
 				current_ensemble.container.size());
 	gets(current_name, current_ensemble.gives(current.second), new_position);
 }
+void Ensemble::takes(Ensemble& ensemble) {
+	auto size = ensemble.has_size();
+	auto end = has_size();
+
+	while (size--)
+		takes(0, ensemble, ++end);
+}
 size_t Ensemble::has_size() const {
 	return container.size();
 }
 void Ensemble::self_clears() {
+
 	container.clear();
 	is_modified();
+}
+void resumes() {
+
 }
 std::string Ensemble::names(std::string candidate) const {
 	std::set<std::string> found;
@@ -376,6 +398,9 @@ Ensemble::Unique_ptr Ensemble::gives(Container::iterator iterator) {
 	if (iterator == container.end())
 		throw throw_out_of_range_0(container.size(), container.size());
 	else {
+		if (Process::saving())
+			out.emplace_back(iterator - container.begin(), iterator->first,
+					iterator->second.get());
 		result.swap(iterator->second);
 		is_modified();
 		result->position = nullptr;
@@ -408,12 +433,23 @@ std::tuple<Ensemble*, size_t, std::string> Ensemble::localize(
 			++current;
 		if (position > size)
 			position = 0;
-		if (position)
+		else if (position)
 			name = current->first;
 		else
 			throw_wrong_position(element, ensemble);
-	} else
-		std::clog << log_root_element(element) << std::endl;
+	} else {
+		auto current = buffer.begin();
+		auto size = buffer.size();
+
+		while (position++ < size && current->second.get() != &element)
+			++current;
+		if (position > size)
+			position = 0;
+		else if (position)
+			name = current->first;
+		else
+			std::clog << log_root_element(element) << std::endl;
+	}
 
 	return std::make_tuple(ensemble, position, name);
 }

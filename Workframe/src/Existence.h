@@ -34,9 +34,12 @@ template<typename Type> struct Name {
 
 class Process {
 	static bool run;
+	static bool savage;
 public:
 	static void end();
 	static bool running();
+	static void save();
+	static bool saving();
 };
 
 class Variable {
@@ -173,7 +176,6 @@ protected:
 };
 struct Ensemble: public Element {
 	using Unique_ptr = std::unique_ptr<Element>;
-
 	using Content = std::pair<std::string, Unique_ptr>;
 	using Container = std::list<Content>;
 
@@ -196,11 +198,16 @@ struct Ensemble: public Element {
 	std::string who_is(size_t = 1) const;
 	Unique_ptr gives(size_t = 1);
 	Unique_ptr gives(std::string);
+	void reclames();
 	void gets(std::string, Unique_ptr&&, size_t = 1);
+	void returns();
 	void takes(size_t, Ensemble&, size_t = 1);
 	void takes(std::string, Ensemble&, size_t = 1);
+	void takes(Ensemble&);
+	void sends();
 	size_t has_size() const;
 	void self_clears();
+	void resumes();
 	template<typename Type, typename ... Arguments> Type* generates(
 			std::string name, size_t position = 1, Arguments&& ... arguments) {
 		auto result = new Type(std::forward<Arguments&&>(arguments) ...);
@@ -209,25 +216,34 @@ struct Ensemble: public Element {
 
 		return result;
 	}
+	void trash();
 	virtual Fields shows() const;
 	static std::tuple<Ensemble*, size_t, std::string> localize(const Element&);
 	static Unique_ptr pop(Element&);
+	static void push();
 	static void take(Element&, Ensemble&, size_t);
+	static void send();
 	static std::vector<std::string> have_path(const Element&);
 	static std::string log_root_element(const Element&);
 	static std::string log_out_of_range_0(size_t, size_t);
+	static std::string log_not_saved(std::string = "");
 	static std::out_of_range throw_out_of_range_0(size_t, size_t);
 	static std::domain_error throw_root_element(const Element&);
 	static std::runtime_error throw_wrong_position(const Element&,
 			const Ensemble*);
 private:
 	Container container;
+	static Container buffer;
+	std::vector<std::tuple<size_t, std::string, Element*>> in;
+	std::vector<std::tuple<size_t, std::string, Element*>> out;
 
 	std::string names(std::string) const;
 	bool names(std::string, std::string) const;
 	Container::iterator localizes(size_t) const;
 	std::pair<size_t, Container::iterator> localizes(std::string) const;
 	Unique_ptr gives(Container::iterator);
+	static Unique_ptr give(size_t);
+	static Unique_ptr give(std::string);
 protected:
 	Ensemble() = default;
 	Ensemble(Fields);
