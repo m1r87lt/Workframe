@@ -246,6 +246,8 @@ Element::Element(Element&& moving) :
 }
 
 //Ensemble
+Ensemble::Container Ensemble::nowhere;
+
 Element& Ensemble::operator [](size_t position) const {
 	return *localizes(position)->second;
 }
@@ -274,17 +276,6 @@ Ensemble::Unique_ptr Ensemble::gives(size_t position) {
 Ensemble::Unique_ptr Ensemble::gives(std::string name) {
 	return gives(localizes(name).second);
 }
-void Ensemble::reclames() {
-	if (Process::saving()) {
-		if (out.empty())
-			log_not_saved(NAME(out));
-		else {
-			auto outbound = out.back();
-
-			gets(std::get<1>(outbound), std::get<2>(outbound), std::get<0>(outbound));
-		}
-	}
-}
 void Ensemble::gets(std::string name, Unique_ptr&& element, size_t position) {
 	auto current = element.get();
 	auto iterator = localizes(position);
@@ -299,21 +290,14 @@ void Ensemble::gets(std::string name, Unique_ptr&& element, size_t position) {
 }
 void Ensemble::takes(size_t current_position, Ensemble& current_ensemble,
 		size_t new_position) {
-	auto current = current_ensemble.localizes(current_position);
-
-	if (current == current_ensemble.container.end())
-		throw throw_out_of_range_0(current_position,
-				current_ensemble.container.size());
-	gets(current->first, current_ensemble.gives(current), new_position);
+	takes(current_ensemble.localizes(current_position), current_position,
+			current_ensemble, new_position);
 }
 void Ensemble::takes(std::string current_name, Ensemble& current_ensemble,
 		size_t new_position) {
 	auto current = current_ensemble.localizes(current_name);
 
-	if (current.second == current_ensemble.container.end())
-		throw throw_out_of_range_0(current.first,
-				current_ensemble.container.size());
-	gets(current_name, current_ensemble.gives(current.second), new_position);
+	takes(current.second, current.first, current_ensemble, new_position);
 }
 void Ensemble::takes(Ensemble& ensemble) {
 	auto size = ensemble.has_size();
@@ -321,6 +305,9 @@ void Ensemble::takes(Ensemble& ensemble) {
 
 	while (size--)
 		takes(0, ensemble, ++end);
+}
+void gives_back() {
+	d;
 }
 size_t Ensemble::has_size() const {
 	return container.size();
@@ -398,9 +385,6 @@ Ensemble::Unique_ptr Ensemble::gives(Container::iterator iterator) {
 	if (iterator == container.end())
 		throw throw_out_of_range_0(container.size(), container.size());
 	else {
-		if (Process::saving())
-			out.emplace_back(iterator - container.begin(), iterator->first,
-					iterator->second.get());
 		result.swap(iterator->second);
 		is_modified();
 		result->position = nullptr;
@@ -409,6 +393,16 @@ Ensemble::Unique_ptr Ensemble::gives(Container::iterator iterator) {
 	}
 
 	return std::move(result);
+}
+void Ensemble::takes(Container::iterator current, size_t current_position, Ensemble& current_ensemble,
+		size_t new_position) {
+	if (current == current_ensemble.container.end())
+		throw throw_out_of_range_0(current_position,
+				current_ensemble.container.size());
+	if (Process::saving())
+		inbounds.emplace_back(current_ensemble, current_position,
+				current->first, current->second.get());
+	gets(current->first, current_ensemble.gives(current), new_position);
 }
 
 Object::Fields Ensemble::shows() const {

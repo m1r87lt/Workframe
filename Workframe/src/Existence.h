@@ -198,13 +198,11 @@ struct Ensemble: public Element {
 	std::string who_is(size_t = 1) const;
 	Unique_ptr gives(size_t = 1);
 	Unique_ptr gives(std::string);
-	void reclames();
 	void gets(std::string, Unique_ptr&&, size_t = 1);
-	void returns();
 	void takes(size_t, Ensemble&, size_t = 1);
 	void takes(std::string, Ensemble&, size_t = 1);
 	void takes(Ensemble&);
-	void sends();
+	void gives_back();
 	size_t has_size() const;
 	void self_clears();
 	void resumes();
@@ -220,9 +218,9 @@ struct Ensemble: public Element {
 	virtual Fields shows() const;
 	static std::tuple<Ensemble*, size_t, std::string> localize(const Element&);
 	static Unique_ptr pop(Element&);
-	static void push();
+	static void push(Ensemble&, Unique_ptr&&, size_t = 1);
 	static void take(Element&, Ensemble&, size_t);
-	static void send();
+	static void give_back();
 	static std::vector<std::string> have_path(const Element&);
 	static std::string log_root_element(const Element&);
 	static std::string log_out_of_range_0(size_t, size_t);
@@ -233,17 +231,15 @@ struct Ensemble: public Element {
 			const Ensemble*);
 private:
 	Container container;
-	static Container buffer;
-	std::vector<std::tuple<size_t, std::string, Element*>> in;
-	std::vector<std::tuple<size_t, std::string, Element*>> out;
+	static Container nowhere;
+	std::vector<std::tuple<Ensemble*, size_t, std::string, Element*>> inbounds;
 
 	std::string names(std::string) const;
 	bool names(std::string, std::string) const;
 	Container::iterator localizes(size_t) const;
 	std::pair<size_t, Container::iterator> localizes(std::string) const;
 	Unique_ptr gives(Container::iterator);
-	static Unique_ptr give(size_t);
-	static Unique_ptr give(std::string);
+	void takes(Container::iterator, size_t, Ensemble&, size_t);
 protected:
 	Ensemble() = default;
 	Ensemble(Fields);
