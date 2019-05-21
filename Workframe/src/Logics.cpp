@@ -9,12 +9,12 @@
 
 namespace game {
 
-//Conditional
-base::Element* Conditional::gives_generator() const {
+//Trigger
+base::Element* Trigger::gives_generator() const {
 	return generator;
 }
 
-virtual Conditional::Fields Conditional::shows() const {
+Trigger::Fields Trigger::shows() const {
 	auto result = Object::shows();
 
 	result.insert(VARIABLE(generator));
@@ -22,29 +22,58 @@ virtual Conditional::Fields Conditional::shows() const {
 	return result;
 }
 
-Conditional::Conditional(base::Element* generator) {
+Trigger::Trigger(base::Element* generator) {
 	this->generator = generator;
 }
 
-//Eventual
-base::Element* Eventual::gives_generator() const {
-	return generator;
+//Simulator
+std::set<Simulator::Choice*> Simulator::all;
+std::map<Simulator::Choice*, std::set<std::string>> Simulator::valid;
+
+void Simulator::execute() {
+	auto choices = all;
+
+	valid.clear();
+	for (auto choice : choices)
+		(*choice)();
+}
+std::map<Simulator::Choice*, std::set<std::string>> Simulator::give_choices() {
+	return valid;
 }
 
-virtual Eventual::Fields Eventual::shows() const {
-	auto result = Object::shows();
+//Simulator::Choice
+std::set<std::string> Simulator::Choice::validates_choices() {
+	std::set<std::string> result;
 
-	result.insert(VARIABLE(generator));
+	for (auto option : provides()) {
+		if (operator ()(option))
+			result.emplace(option);
+		reverts(option);
+	}
 
 	return result;
 }
 
-Eventual::Eventual(base::Element* generator) {
-	this->generator = generator;
+bool Simulator::Choice::operator ()() {
+	auto choices = validates_choices();
+
+	if (choices.empty()) {
+		valid.erase(this);
+
+		return false;
+	} else {
+		valid[this] = choices;
+
+		return true;
+	}
 }
 
-Trigger::~Trigger() {
-	// TODO Auto-generated destructor stub
+Simulator::Choice::Choice(base::Element* generator): Trigger(generator) {
+	Simulator::all.emplace(this);
+}
+Simulator::Choice::~Choice() {
+	Simulator::all.erase(this);
 }
 
-} /* namespace game */
+}
+/* namespace game */

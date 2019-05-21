@@ -109,6 +109,7 @@ template<> std::function<
 //Object
 std::chrono::steady_clock::time_point Object::start =
 		std::chrono::steady_clock::now();
+std::list<std::pair<std::string, Object*>> Object::log;
 
 Object::Instant Object::exists_from() const {
 	return creation;
@@ -120,6 +121,10 @@ Object::Fields Object::gives_attributes() const {
 	return attributes;
 }
 void Object::gets_attributes(Fields attributes) {
+	if (Process::saving()) {
+		attribute_story.push_back(last_attributes);
+		log.emplace_front("attributes", this);
+	}
 	last_attributes = this->attributes;
 	this->attributes = attributes;
 	is_modified();
@@ -162,10 +167,18 @@ bool Object::operator !=(const Object& righthand) {
 void Object::initializes(Fields attributes) {
 	this->attributes = attributes;
 	is_modified();
-	creation = savage = modification;
+	creation = modification;
 }
 void Object::is_modified() {
 	modification = std::chrono::steady_clock::now();
+}
+void Object::reverts_attributes() {
+	attributes = last_attributes;
+	if (attribute_story.empty())
+		throw throw_not_saved(*this, "attributes", TYPE(attribute_story)+ " is empty.");
+	last_attributes = attribute_story.back();
+	attribute_story.pop_back();
+	is_modified();
 }
 
 Object::Fields Object::shows() const {
@@ -177,6 +190,50 @@ Object::Fields Object::shows() const {
 	result.insert(VARIABLE(last_attributes));
 
 	return result;
+}
+void Object::reverts(std::string command) {
+	if (command == "attributes")
+		reverts_attributes();
+	else
+		throw throw_revert_error(*this, command);
+}
+
+void Object::revert(bool step) {
+	auto logged = log.begin();
+	auto end = log.end();
+
+	while (logged != end) {
+		auto pointer = logged->second;
+
+		if (pointer)
+			pointer->reverts(logged->first);
+		else if (step)
+			++(end = logged);
+		logged = log.erase(logged);
+	}
+}
+void Object::save() {
+	log.emplace_front("", nullptr);
+}
+
+std::domain_error Object::throw_revert_error(Object& type,
+		const std::string& command) {
+	auto result = "ERROR: \"" + command
+			+ "\" is not a valid command for class '" + typeid(type).name()
+			+ "'.";
+
+	std::cerr << result << std::endl;
+
+	return std::domain_error(result);
+}
+std::domain_error Object::throw_not_saved(Object& object, std::string command,
+		std::string message) {
+	auto result = "ERROR: " + message + " for " + object.prints() + "by \""
+			+ command + "\".";
+
+	std::cerr << result << std::endl;
+
+	return std::domain_error(result);
 }
 
 Object::Object() {
@@ -281,6 +338,10 @@ void Ensemble::gets(std::string name, Unique_ptr&& element, size_t position) {
 	auto iterator = localizes(position);
 
 	if (current) {
+		if (Process::saving()) {
+			inbounds.emplace_back(nullptr, position, element.get());
+			log.emplace_front("get", this);
+		}
 		container.emplace(iterator, names(name), std::move(element));
 		current->position = this;
 		current->is_modified();
@@ -306,19 +367,26 @@ void Ensemble::takes(Ensemble& ensemble) {
 	while (size--)
 		takes(0, ensemble, ++end);
 }
-void gives_back() {
-	d;
-}
 size_t Ensemble::has_size() const {
 	return container.size();
 }
 void Ensemble::self_clears() {
+	if (Process::saving()) {
+		auto begin = container.begin();
+		auto current = container.end();
 
-	container.clear();
+		trash.emplace_back();
+		while (begin != current--)
+			current = erases(current);
+	} else
+		container.clear();
 	is_modified();
 }
-void resumes() {
-
+void Ensemble::erases(size_t position) {
+	erases(localizes(position));
+}
+void Ensemble::erases(std::string name) {
+	erases(localizes(name).second);
 }
 std::string Ensemble::names(std::string candidate) const {
 	std::set<std::string> found;
@@ -394,16 +462,81 @@ Ensemble::Unique_ptr Ensemble::gives(Container::iterator iterator) {
 
 	return std::move(result);
 }
-void Ensemble::takes(Container::iterator current, size_t current_position, Ensemble& current_ensemble,
-		size_t new_position) {
+void Ensemble::takes(Container::iterator current, size_t current_position,
+		Ensemble& current_ensemble, size_t new_position) {
 	if (current == current_ensemble.container.end())
 		throw throw_out_of_range_0(current_position,
 				current_ensemble.container.size());
-	if (Process::saving())
-		inbounds.emplace_back(current_ensemble, current_position,
-				current->first, current->second.get());
 	gets(current->first, current_ensemble.gives(current), new_position);
+	if (Process::saving()) {
+		std::get<0>(inbounds.back()) = &current_ensemble;
+		log.front().first = "take";
+	}
 }
+Ensemble::Container::iterator Ensemble::erases(Container::iterator position,
+		bool trash) {
+	if (Process::saving()) {
+		decltype(position->second)& element = position->second;
+
+		if (trash)
+			this->trash.emplace_back();
+		nowhere.emplace_back(position->first, nullptr);
+		element->position = nullptr;
+		element->is_modified();
+		element.swap(nowhere.back().second);
+		this->trash.back().emplace_back(nowhere.rbegin().base());
+		log.emplace_front("erase", this);
+	}
+	is_modified();
+
+	return container.erase(position);
+}
+void Ensemble::trashes() {
+	if (inbounds.empty()) {
+		throw throw_not_saved(*this, "get", TYPE(inbounds)+ " is empty.");
+	}
+	container.erase(localizes(std::get<1>(inbounds.back())));
+	is_modified();
+}
+void Ensemble::gives_back() {
+	if (inbounds.empty())
+		throw throw_not_saved(*this, "take", TYPE(inbounds)+ " is empty.");
+		else {
+			auto outbound = inbounds.back();
+			auto element = std::get<2>(outbound);
+			auto name = std::get<2>(localize(*element));
+			auto target = std::get<0>(outbound);
+			auto iterator = target->localizes(std::get<1>(outbound));
+
+			target->container.emplace(iterator, names(name), gives(name));
+			element->position = target;
+			element->is_modified();
+			target->is_modified();
+			inbounds.pop_back();
+		}
+	}
+void Ensemble::resumes() {
+	if (trash.empty())
+		throw throw_not_saved(*this, "erase", TYPE(trash)+ " is empty.");
+		else {
+			auto current = trash.back();
+
+			if (current.empty() || nowhere.empty())
+			throw throw_not_saved(*this, "erase", TYPE(trash.back()) +
+			" or " + TYPE(nowhere) + " is empty.");
+			else {
+				Content& trashed = nowhere.back();
+				decltype(trashed.second)& element = trashed.second;
+
+				container.emplace_back(trashed.first, nullptr);
+				element->position = this;
+				element->is_modified();
+				element.swap(container.back().second);
+				nowhere.pop_back();
+				trash.pop_back();
+			}
+		}
+	}
 
 Object::Fields Ensemble::shows() const {
 	auto result = Element::shows();
@@ -411,6 +544,16 @@ Object::Fields Ensemble::shows() const {
 	result.insert(VARIABLE(container));
 
 	return result;
+}
+void Ensemble::reverts(std::string command) {
+	if (command == "get")
+		trashes();
+	else if (command == "take")
+		gives_back();
+	else if (command == "erase")
+		resumes();
+	else
+		Object::reverts(command);
 }
 
 std::tuple<Ensemble*, size_t, std::string> Ensemble::localize(
@@ -431,23 +574,12 @@ std::tuple<Ensemble*, size_t, std::string> Ensemble::localize(
 			name = current->first;
 		else
 			throw_wrong_position(element, ensemble);
-	} else {
-		auto current = buffer.begin();
-		auto size = buffer.size();
-
-		while (position++ < size && current->second.get() != &element)
-			++current;
-		if (position > size)
-			position = 0;
-		else if (position)
-			name = current->first;
-		else
-			std::clog << log_root_element(element) << std::endl;
-	}
+	} else
+		std::clog << log_root_element(element) << std::endl;
 
 	return std::make_tuple(ensemble, position, name);
 }
-Ensemble::Unique_ptr Ensemble::pop(Element& element) {
+Ensemble::Unique_ptr Ensemble::pop(Element & element) {
 	auto current = localize(element);
 	auto ensemble = std::get<0>(current);
 
@@ -459,12 +591,11 @@ Ensemble::Unique_ptr Ensemble::pop(Element& element) {
 void Ensemble::take(Element& element, Ensemble& new_ensemble,
 		size_t new_position) {
 	auto current = localize(element);
+	auto position = std::get<1>(current);
 	auto current_ensemble = std::get<0>(current);
 
-	if (current_ensemble)
-		throw throw_root_element(element);
-	new_ensemble.gets(std::get<2>(current),
-			current_ensemble->gives(std::get<1>(current)), new_position);
+	new_ensemble.takes(current_ensemble->localizes(position), position,
+			*current_ensemble, new_position);
 }
 std::vector<std::string> Ensemble::have_path(const Element& element) {
 	std::vector<std::string> result;
@@ -482,6 +613,11 @@ std::vector<std::string> Ensemble::have_path(const Element& element) {
 	}
 
 	return result;
+}
+void Ensemble::erase(const Element& element) {
+	auto position = localize(element);
+
+	std::get<0>(position)->erases(std::get<1>(position));
 }
 std::string Ensemble::log_root_element(const Element& element) {
 	return element.prints() + " is a root.";

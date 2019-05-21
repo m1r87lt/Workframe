@@ -12,40 +12,36 @@
 
 namespace game {
 
-struct Simulator: public base::Object {
-	class Case {
+class Trigger: public virtual base::Object {
+	base::Element* generator;
+protected:
+	Trigger(base::Element*);
+public:
+	base::Element* gives_generator() const;
+	virtual Fields shows() const;
+	virtual bool operator ()() = 0;
+	virtual ~Trigger() = default;
+};
+
+struct Simulator {
+	class Choice: public virtual Trigger {
+		std::set<std::string> validates_choices();
 		friend Simulator;
-		Case();
+	protected:
+		virtual bool operator ()(std::string) = 0;
+		virtual std::set<std::string> provides() = 0;
+	public:
+		virtual bool operator ()();
+		Choice(base::Element*);
+		virtual ~Choice();
 	};
-	static Case consider(Case*);
-};
-
-class Conditional: public virtual base::Object {
-	base::Element* generator;
-protected:
-	Conditional(base::Element*);
-public:
-	base::Element* gives_generator() const;
-	virtual Fields shows() const;
-	virtual bool operator ()(Simulator*) = 0;
-	virtual ~Conditional() = default;
-};
-class Eventual: public virtual base::Object {
-	base::Element* generator;
-protected:
-	Eventual(base::Element*);
-public:
-	base::Element* gives_generator() const;
-	virtual Fields shows() const;
-	virtual Simulator::Case operator ()(Simulator*) = 0;
-	virtual ~Eventual() = default;
-};
-
-class Trigger: public base::Object {
-public:
-	virtual ~Trigger();
+	friend Choice;
+	static void execute();
+	static std::map<Simulator::Choice*, std::set<std::string>> give_choices();
+private:
+	static std::set<Choice*> all;
+	static std::map<Choice*, std::set<std::string>> valid;
 };
 
 } /* namespace game */
 #endif /* LOGICS_H_ */
-

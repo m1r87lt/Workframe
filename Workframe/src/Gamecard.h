@@ -18,6 +18,7 @@ class Card: private base::Ensemble {
 
 	Element& operator [](bool) const;
 	void manages_piled(bool, bool);
+	void flips();
 protected:
 	Card(Unique_ptr&&, Unique_ptr&&, bool = true, Fields = Fields());
 	friend class Deck;
@@ -31,6 +32,7 @@ public:
 	void covers(bool);
 	virtual Fields shows() const;
 	virtual std::string prints() const;
+	virtual void reverts(std::string);
 	static Ensemble* cast(const Card*);
 	static Card* cast(const Element*);
 	static Unique_ptr construct(Unique_ptr&&, Unique_ptr&&, bool = true,
@@ -40,6 +42,7 @@ class Deck: private base::Ensemble {
 	bool covered;
 
 	size_t randomly_gives(bool);
+	void flips();
 protected:
 	Deck();
 	Deck(bool, Fields = Fields());
@@ -56,6 +59,9 @@ public:
 	Deck::Card draws_over();
 	Deck::Card draws_under();
 	Deck::Card randomly_draws();
+	void takes_over(Ensemble&, size_t = 1);
+	void takes_under(Ensemble&, size_t = 1);
+	void randomly_takes(Ensemble&, size_t = 1);
 	size_t has_size() const;
 	void self_clears();
 	void shuffles();
@@ -65,6 +71,7 @@ public:
 	void covers();
 	virtual Fields shows() const;
 	virtual std::string prints() const;
+	virtual void reverts(std::string);
 	static Unique_ptr cast(Deck::Card&&);
 	static Deck::Card cast(Unique_ptr&&);
 	static Ensemble* cast(const Deck*);

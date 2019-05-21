@@ -28,6 +28,9 @@ void Card::manages_piled(bool covered, bool do_keep_piled) {
 	} else if (face)
 		face->self_clears();
 }
+void Card::flips() {
+	covered = !covered;
+}
 base::Element& Card::operator ()() const {
 	return operator [](covered);
 }
@@ -48,22 +51,25 @@ bool Card::is_covered() const {
 	return covered;
 }
 void Card::operator ~() {
-	auto face = is_ensemble(covered);
-
+	manages_piled(covered, false);
 	covered = !covered;
-	if (face)
-		face->self_clears();
+	if (base::Process::saving())
+		log.emplace_front("flip", cast(this));
 }
 void Card::faces(bool do_keep_piled) {
 	if (covered) {
 		manages_piled(covered, do_keep_piled);
 		covered = false;
+		if (base::Process::saving())
+			log.emplace_front("flip", cast(this));
 	}
 }
 void Card::covers(bool do_keep_piled) {
 	if (!covered) {
 		manages_piled(covered, do_keep_piled);
 		covered = true;
+		if (base::Process::saving())
+				log.emplace_front("flip", cast(this));
 	}
 }
 
@@ -81,6 +87,12 @@ std::string Card::prints() const {
 			<< (covered ? " )" : " ]");
 
 	return result.str();
+}
+void Card::reverts(std::string command) {
+	if (command == "flip")
+		flips();
+	else
+		Ensemble::reverts(command);
 }
 
 base::Ensemble* Card::cast(const Card* pointer) {
@@ -104,6 +116,9 @@ Card::Card(Unique_ptr&& cover, Unique_ptr&& face, bool covered,
 }
 
 // Deck
+void Deck::flips() {
+	covered = !covered;
+}
 size_t Deck::randomly_gives(bool add) {
 	std::default_random_engine generator;
 	std::uniform_int_distribution<size_t> distribution(1,
@@ -144,6 +159,15 @@ Deck::Card Deck::draws_under() {
 Deck::Card Deck::randomly_draws() {
 	return cast(gives(randomly_gives(false)));
 }
+void Deck::takes_over(Ensemble& new_ensemble, size_t new_position) {
+	new_ensemble.takes(1, *this, new_position);
+}
+void Deck::takes_under(Ensemble& new_ensemble, size_t new_position) {
+	new_ensemble.takes(Ensemble::has_size(), *this, new_position);
+}
+void Deck::randomly_takes(Ensemble& new_ensemble, size_t new_position) {
+	new_ensemble.takes(randomly_gives(false), *this, new_position);
+}
 size_t Deck::has_size() const {
 	return Ensemble::has_size();
 }
@@ -164,12 +188,16 @@ bool Deck::is_covered() const {
 }
 void Deck::operator ~() {
 	covered = !covered;
+	if (base::Process::saving())
+		log.emplace_front("flip", cast(this));
 	for (auto content = has_size(); content; --content)
 		~*game::Card::cast(&(operator [](content)));
 }
 void Deck::faces() {
 	if (covered) {
 		covered = false;
+		if (base::Process::saving())
+			log.emplace_front("flip", cast(this));
 		for (auto content = has_size(); content; --content)
 			~*game::Card::cast(&(operator [](content)));
 	}
@@ -177,6 +205,8 @@ void Deck::faces() {
 void Deck::covers() {
 	if (!covered) {
 		covered = true;
+		if (base::Process::saving())
+			log.emplace_front("flip", cast(this));
 		for (auto content = has_size(); content; --content)
 			~*game::Card::cast(&(operator [](content)));
 	}
@@ -197,6 +227,13 @@ std::string Deck::prints() const {
 
 	return result.str();
 }
+void Deck::reverts(std::string command) {
+	if (command == "flip")
+		flips();
+	else
+		Ensemble::reverts(command);
+}
+
 Deck::Unique_ptr Deck::cast(Deck::Card&& unique_ptr) {
 	return Deck::Unique_ptr(unique_ptr.release());
 }

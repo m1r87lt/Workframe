@@ -90,7 +90,8 @@ template<typename Type> std::string print_std__set(const std::set<Type>* set) {
 
 	return result + (result == "{" ? " " : "\n") + "}";
 }
-template<typename Type> std::string print_std__vector(const std::vector<Type>* vector) {
+template<typename Type> std::string print_std__vector(
+		const std::vector<Type>* vector) {
 	std::string result = "{";
 
 	for (auto content : *vector)
@@ -103,7 +104,8 @@ template<typename Type> std::string print_std__vector(const std::vector<Type>* v
 
 	return result + "}";
 }
-template<typename Type, size_t N> std::string print_std__array(const std::array<Type, N>* array) {
+template<typename Type, size_t N> std::string print_std__array(
+		const std::array<Type, N>* array) {
 	std::string result = "{";
 
 	for (auto content : *array)
@@ -138,16 +140,27 @@ struct Object {
 	bool operator !=(const Object&);
 	virtual Fields shows() const;
 	virtual std::string prints() const = 0;
+	static void revert(bool);
+	static void save();
 private:
 	Instant creation;
 	Instant modification;
 	Fields attributes;
 	Fields last_attributes;
+	std::vector<Fields> attribute_story;
 	static Instant start;
 	friend Class<Instant> ;
 	void initializes(Fields = Fields());
+	static std::domain_error throw_revert_error(Object&,
+			const std::string&);
 protected:
+	static std::list<std::pair<std::string, Object*>> log;
+
 	void is_modified();
+	void reverts_attributes();
+	virtual void reverts(std::string);
+	static std::domain_error throw_not_saved(Object&, std::string,
+			std::string);
 	Object();
 	Object(Fields);
 	virtual ~Object() = default;
@@ -202,10 +215,10 @@ struct Ensemble: public Element {
 	void takes(size_t, Ensemble&, size_t = 1);
 	void takes(std::string, Ensemble&, size_t = 1);
 	void takes(Ensemble&);
-	void gives_back();
 	size_t has_size() const;
 	void self_clears();
-	void resumes();
+	void erases(size_t = 1);
+	void erases(std::string);
 	template<typename Type, typename ... Arguments> Type* generates(
 			std::string name, size_t position = 1, Arguments&& ... arguments) {
 		auto result = new Type(std::forward<Arguments&&>(arguments) ...);
@@ -214,17 +227,14 @@ struct Ensemble: public Element {
 
 		return result;
 	}
-	void trash();
 	virtual Fields shows() const;
 	static std::tuple<Ensemble*, size_t, std::string> localize(const Element&);
 	static Unique_ptr pop(Element&);
-	static void push(Ensemble&, Unique_ptr&&, size_t = 1);
 	static void take(Element&, Ensemble&, size_t);
-	static void give_back();
 	static std::vector<std::string> have_path(const Element&);
+	static void erase(const Element&);
 	static std::string log_root_element(const Element&);
 	static std::string log_out_of_range_0(size_t, size_t);
-	static std::string log_not_saved(std::string = "");
 	static std::out_of_range throw_out_of_range_0(size_t, size_t);
 	static std::domain_error throw_root_element(const Element&);
 	static std::runtime_error throw_wrong_position(const Element&,
@@ -232,7 +242,8 @@ struct Ensemble: public Element {
 private:
 	Container container;
 	static Container nowhere;
-	std::vector<std::tuple<Ensemble*, size_t, std::string, Element*>> inbounds;
+	std::vector<std::tuple<Ensemble*, size_t, Element*>> inbounds;
+	std::vector<std::vector<Container::iterator>> trash;
 
 	std::string names(std::string) const;
 	bool names(std::string, std::string) const;
@@ -240,7 +251,12 @@ private:
 	std::pair<size_t, Container::iterator> localizes(std::string) const;
 	Unique_ptr gives(Container::iterator);
 	void takes(Container::iterator, size_t, Ensemble&, size_t);
+	Container::iterator erases(Container::iterator, bool = true);
 protected:
+	void trashes();
+	void gives_back();
+	void resumes();
+	virtual void reverts(std::string);
 	Ensemble() = default;
 	Ensemble(Fields);
 	virtual ~Ensemble() = default;
