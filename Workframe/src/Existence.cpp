@@ -10,12 +10,19 @@
 namespace base {
 //Process
 bool Process::run = true;
+bool Process::savage = false;
 
 void Process::end() {
 	run = false;
 }
 bool Process::running() {
 	return run;
+}
+void Process::save() {
+	savage = true;
+}
+bool Process::saving() {
+	return savage;
 }
 
 //Variable

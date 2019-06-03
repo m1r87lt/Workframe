@@ -44,4 +44,5 @@ private:
 };
 
 } /* namespace game */
+
 #endif /* LOGICS_H_ */
