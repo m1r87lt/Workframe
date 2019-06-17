@@ -32,6 +32,7 @@ struct Simulator {
 		virtual std::set<std::string> provides() = 0;
 	public:
 		virtual bool operator ()();
+		static std::invalid_argument throw_invalid_command(Choice*, std::string);
 		Choice(base::Element*);
 		virtual ~Choice();
 	};

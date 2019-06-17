@@ -125,6 +125,11 @@ template<typename Type> std::string print_fundamental(const Type* type) {
 
 	return result.str();
 }
+template<typename First, typename Second, char open = '(', char close = ')'> std::string print_pair(
+		const std::pair<First, Second>* pair) {
+	return std::string(1, open) + ' ' + VARIABLE(pair->first).second + ", "
+			+ VARIABLE(pair->second).second + ' ' + close;
+}
 
 struct Object {
 	using Instant = std::chrono::steady_clock::time_point;
@@ -151,16 +156,14 @@ private:
 	static Instant start;
 	friend Class<Instant> ;
 	void initializes(Fields = Fields());
-	static std::domain_error throw_revert_error(Object&,
-			const std::string&);
+	static std::domain_error throw_revert_error(Object&, const std::string&);
 protected:
 	static std::list<std::pair<std::string, Object*>> log;
 
 	void is_modified();
 	void reverts_attributes();
 	virtual void reverts(std::string);
-	static std::domain_error throw_not_saved(Object&, std::string,
-			std::string);
+	static std::domain_error throw_not_saved(Object&, std::string, std::string);
 	Object();
 	Object(Fields);
 	virtual ~Object() = default;

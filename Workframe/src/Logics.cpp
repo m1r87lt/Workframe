@@ -68,6 +68,10 @@ bool Simulator::Choice::operator ()() {
 	}
 }
 
+std::invalid_argument Simulator::Choice::throw_invalid_command(Choice* choice, std::string command) {
+	return "\"" + command + "\" is not a valid command for " + choice->prints() + ".";
+}
+
 Simulator::Choice::Choice(base::Element* generator): Trigger(generator) {
 	Simulator::all.emplace(this);
 }
@@ -75,5 +79,4 @@ Simulator::Choice::~Choice() {
 	Simulator::all.erase(this);
 }
 
-}
-/* namespace game */
+} /* namespace game */
